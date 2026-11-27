@@ -1,0 +1,2631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Engineering — Interactive Study Notes</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+            mono: ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'monospace'],
+          },
+          colors: {
+            navy: {
+              950: '#090F1E',
+              900: '#0F172A',
+              800: '#1E293B',
+              700: '#334155',
+            },
+            brand: {
+              50: '#F0FDFA',
+              100: '#CCFBF1',
+              500: '#14B8A6',
+              600: '#0D9488',
+              700: '#0F766E',
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: #0F172A;
+      color: #0F172A;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    #deck-viewport {
+      height: calc(100vh - 56px);
+      width: 100%;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .slide {
+      display: none;
+      height: 100%;
+      width: 100%;
+      overflow-y: auto;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    .slide.active {
+      display: flex;
+      flex-direction: column;
+      animation: slideFadeIn 0.22s ease-out;
+    }
+
+    @keyframes slideFadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .slide-dark {
+      background: radial-gradient(circle at 85% 15%, rgba(20, 184, 166, 0.14), transparent 45%),
+                  linear-gradient(145deg, #0B1221 0%, #0F172A 55%, #132038 100%);
+      color: #F8FAFC;
+    }
+
+    .slide-light {
+      background-color: #F4F7FA;
+      color: #0F172A;
+    }
+
+    .top-accent-bar {
+      height: 4px;
+      width: 100%;
+      background: linear-gradient(90deg, #0D9488 0%, #14B8A6 60%, #2563EB 100%);
+      flex-shrink: 0;
+    }
+
+    .accent-card {
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+      position: relative;
+      overflow: hidden;
+    }
+    .accent-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 4px;
+    }
+    .accent-teal::before { background: #0D9488; }
+    .accent-navy::before { background: #1E293B; }
+    .accent-blue::before { background: #2563EB; }
+    .accent-crimson::before { background: #DC2626; }
+    .accent-indigo::before { background: #4F46E5; }
+
+    .accent-crimson-bg {
+      background: #FEF2F2;
+      border-color: #FECACA;
+    }
+
+    .code-block {
+      background: #0F172A;
+      color: #E2E8F0;
+      font-family: 'JetBrains Mono', monospace;
+      border-radius: 10px;
+      border: 1px solid #1E293B;
+    }
+    .inline-code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85em;
+      background: #E2E8F0;
+      color: #0F172A;
+      padding: 1px 6px;
+      border-radius: 5px;
+    }
+    .slide-dark .inline-code {
+      background: rgba(255, 255, 255, 0.12);
+      color: #5EEAD4;
+    }
+
+    .slide::-webkit-scrollbar { width: 6px; }
+    .slide::-webkit-scrollbar-track { background: transparent; }
+    .slide::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.45); border-radius: 999px; }
+    .slide::-webkit-scrollbar-thumb:hover { background: rgba(100, 116, 139, 0.7); }
+
+    .tab-btn {
+      transition: all 0.15s ease;
+    }
+    .tab-btn.active-tab {
+      background-color: #0D9488;
+      color: #FFFFFF;
+      border-color: #0D9488;
+      box-shadow: 0 2px 6px rgba(13, 148, 136, 0.25);
+    }
+
+    .stage-node {
+      transition: all 0.18s ease;
+      cursor: pointer;
+    }
+    .stage-node.active-node {
+      border-color: #0D9488;
+      background-color: #F0FDFA;
+      box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.22);
+      transform: translateY(-2px);
+    }
+
+    .token-chip {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      line-height: 1.25;
+      border: 1px solid transparent;
+      transition: transform 0.12s ease;
+    }
+    .token-chip:hover { transform: translateY(-1px); }
+
+    #overview-modal {
+      backdrop-filter: blur(4px);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- MAIN DECK VIEWPORT -->
+  <main id="deck-viewport" aria-live="polite">
+
+    <!-- =========================================================
+         SLIDE 1: DARK COVER SLIDE
+    ========================================================== -->
+    <section id="slide-1" class="slide slide-dark active" data-module="Overview" data-title="AI Engineering: Core Concepts & Architectures">
+      <div class="w-full h-full flex flex-col justify-between relative">
+        <div class="hidden sm:block absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-teal-400 via-teal-500 to-blue-500"></div>
+
+        <div class="max-w-6xl w-full mx-auto px-6 sm:px-12 py-8 sm:py-12 my-auto">
+          <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-teal-500/15 border border-teal-400/35 text-teal-300 text-xs font-semibold tracking-wider uppercase mb-5">
+            <span class="w-2 h-2 rounded-full bg-teal-400"></span>
+            Interactive Study Guide
+          </div>
+
+          <h1 class="text-3xl sm:text-5xl font-extrabold tracking-tight text-white leading-tight max-w-4xl">
+            AI Engineering: From Large Language Models to <span class="text-teal-400">RAG, Tool Calling &amp; MCP</span>
+          </h1>
+
+          <p class="mt-4 text-base sm:text-lg text-slate-300 max-w-3xl leading-relaxed">
+            A structured, visual walkthrough of modern AI systems—covering how Large Language Models work under the hood, local and cloud deployment trade-offs, Retrieval-Augmented Generation, and standardized external integrations.
+          </p>
+
+          <!-- 5-Stage Horizontal Progression (clickable jump cards) -->
+          <div class="mt-9">
+            <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">
+              5 Core Modules — Select any module to jump directly
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+              <button type="button" data-goto="2" class="nav-jump text-left p-4 rounded-xl bg-slate-800/80 border border-slate-700 hover:border-teal-400 hover:bg-slate-800 transition group">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-xs font-bold px-2 py-0.5 rounded bg-slate-700 text-slate-200 group-hover:bg-teal-500/20 group-hover:text-teal-300">01</span>
+                  <span class="text-slate-500 group-hover:text-teal-400 text-sm">&rarr;</span>
+                </div>
+                <div class="font-bold text-white text-sm">Basics of LLMs</div>
+                <div class="text-xs text-slate-400 mt-1 leading-snug">Open-weight vs. proprietary, frozen weights &amp; cut-offs</div>
+              </button>
+
+              <button type="button" data-goto="4" class="nav-jump text-left p-4 rounded-xl bg-slate-800/80 border border-slate-700 hover:border-teal-400 hover:bg-slate-800 transition group">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-xs font-bold px-2 py-0.5 rounded bg-slate-700 text-slate-200 group-hover:bg-teal-500/20 group-hover:text-teal-300">02</span>
+                  <span class="text-slate-500 group-hover:text-teal-400 text-sm">&rarr;</span>
+                </div>
+                <div class="font-bold text-white text-sm">LLM Inferencing</div>
+                <div class="text-xs text-slate-400 mt-1 leading-snug">Prompts, tokenisation, embeddings &amp; generation</div>
+              </button>
+
+              <button type="button" data-goto="6" class="nav-jump text-left p-4 rounded-xl bg-slate-800/80 border border-slate-700 hover:border-teal-400 hover:bg-slate-800 transition group">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-xs font-bold px-2 py-0.5 rounded bg-slate-700 text-slate-200 group-hover:bg-teal-500/20 group-hover:text-teal-300">03</span>
+                  <span class="text-slate-500 group-hover:text-teal-400 text-sm">&rarr;</span>
+                </div>
+                <div class="font-bold text-white text-sm">Local &amp; Cloud</div>
+                <div class="text-xs text-slate-400 mt-1 leading-snug">Ollama, OpenRouter, privacy &amp; hardware trade-offs</div>
+              </button>
+
+              <button type="button" data-goto="8" class="nav-jump text-left p-4 rounded-xl bg-teal-950/50 border border-teal-500/45 hover:border-teal-400 hover:bg-teal-950/75 transition group">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-xs font-bold px-2 py-0.5 rounded bg-teal-500/25 text-teal-300">04</span>
+                  <span class="text-teal-400 text-sm">&rarr;</span>
+                </div>
+                <div class="font-bold text-white text-sm">RAG Systems</div>
+                <div class="text-xs text-teal-100/80 mt-1 leading-snug">Text similarity, vector DBs &amp; grounded generation</div>
+              </button>
+
+              <button type="button" data-goto="11" class="nav-jump text-left p-4 rounded-xl bg-teal-950/50 border border-teal-500/45 hover:border-teal-400 hover:bg-teal-950/75 transition group">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-xs font-bold px-2 py-0.5 rounded bg-teal-500/25 text-teal-300">05</span>
+                  <span class="text-teal-400 text-sm">&rarr;</span>
+                </div>
+                <div class="font-bold text-white text-sm">Tool Calling &amp; MCP</div>
+                <div class="text-xs text-teal-100/80 mt-1 leading-snug">External functions, MCP clients/servers &amp; N+M scale</div>
+              </button>
+            </div>
+          </div>
+
+          <div class="mt-8 flex flex-wrap items-center gap-4">
+            <button type="button" data-goto="2" class="nav-jump inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-teal-600 hover:bg-teal-500 text-white font-semibold text-sm shadow-lg shadow-teal-900/40 transition">
+              Begin Module 1
+              <span>&rarr;</span>
+            </button>
+            <button type="button" id="cover-grid-btn" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-medium text-sm transition">
+              Browse All 15 Sections
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================
+         SLIDE 2: MODULE 1 — BASICS OF LLMs, FROZEN MODELS & CUT-OFF
+    ========================================================== -->
+    <section id="slide-2" class="slide slide-light" data-module="Module 1: Basics of LLMs" data-title="What Are LLMs, Frozen Models & Knowledge Cut-Off?">
+      <div class="top-accent-bar"></div>
+      <div class="max-w-6xl w-full mx-auto px-5 sm:px-10 py-5 flex-1 flex flex-col">
+        <header class="pb-3 border-b border-slate-200 flex flex-wrap items-end justify-between gap-2">
+          <div>
+            <div class="text-xs font-bold uppercase tracking-wider text-teal-700">Module 1 &bull; Basics of LLMs</div>
+            <h2 class="text-2xl sm:text-3xl font-extrabold text-navy-900 mt-0.5">Large Language Models, Frozen Weights &amp; Knowledge Cut-Off</h2>
+          </div>
+          <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-teal-50 text-teal-800 border border-teal-200">Foundations</span>
+        </header>
+
+        <div class="mt-5 grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <article class="accent-card accent-navy p-5">
+            <h3 class="text-base font-bold text-navy-900 mb-2.5">What Is a Large Language Model?</h3>
+            <p class="text-sm text-slate-600 leading-relaxed mb-3">
+              A <strong>Large Language Model (LLM)</strong> is a deep neural network—built on the <strong>Transformer</strong> architecture—trained on massive text corpora to model statistical language patterns and predict the next token in a sequence.
+            </p>
+            <ul class="space-y-2 text-sm text-slate-700">
+              <li class="flex gap-2"><span class="text-navy-900 font-bold">&bull;</span><span><strong>Massive Scale:</strong> Billions of learned numerical parameters (weights) encoding grammar, world facts, and reasoning patterns.</span></li>
+              <li class="flex gap-2"><span class="text-navy-900 font-bold">&bull;</span><span><strong>General-Purpose:</strong> A single model performs summarization, drafting, translation, coding, and question answering.</span></li>
+              <li class="flex gap-2"><span class="text-navy-900 font-bold">&bull;</span><span><strong>Probabilistic Output:</strong> Generates fluent text by estimating token probabilities rather than querying a verified database.</span></li>
+            </ul>
+          </article>
+
+          <article class="accent-card accent-blue p-5">
+            <h3 class="text-base font-bold text-blue-700 mb-2.5">What Is a Frozen Model?</h3>
+            <p class="text-sm text-slate-600 leading-relaxed mb-3">
+              Once pre-training and alignment conclude, an LLM's internal parameters are locked—making it a <strong>frozen model</strong> during deployment and everyday inferencing.
+            </p>
+            <ul class="space-y-2 text-sm text-slate-700">
+              <li class="flex gap-2"><span class="text-blue-600 font-bold">&bull;</span><span><strong>Static Parameters:</strong> User prompts and conversations never permanently alter the model's trained weights.</span></li>
+              <li class="flex gap-2"><span class="text-blue-600 font-bold">&bull;</span><span><strong>No Automatic Learning:</strong> Facts taught in one session disappear when a fresh session begins unless injected as context.</span></li>
+              <li class="flex gap-2"><span class="text-blue-600 font-bold">&bull;</span><span><strong>Predictable Behavior:</strong> Freezing weights ensures consistent, auditable output and avoids unintended model drift.</span></li>
+            </ul>
+          </article>
+
+          <article class="accent-card accent-crimson accent-crimson-bg p-5">
+            <h3 class="text-base font-bold text-red-700 mb-2.5">Knowledge Cut-Off &amp; Its Limitations</h3>
+            <p class="text-sm text-slate-700 leading-relaxed mb-3">
+              The <strong>knowledge cut-off</strong> is the latest date of training data absorbed before the model was frozen (e.g., March 2024).
+            </p>
+            <ul class="space-y-2 text-sm text-slate-700">
+              <li class="flex gap-2"><span class="text-red-600 font-bold">&bull;</span><span><strong>Significance:</strong> Establishes the temporal boundary for facts, standards, and scientific knowledge stored inside weights.</span></li>
+              <li class="flex gap-2"><span class="text-red-600 font-bold">&bull;</span><span><strong>Stale Information:</strong> Cannot know newly approved drugs, updated clinical guidelines, or recent events.</span></li>
+              <li class="flex gap-2"><span class="text-red-600 font-bold">&bull;</span><span><strong>Hallucination Risk:</strong> Pressed on post-cutoff or private facts, a standalone LLM may fabricate plausible-sounding errors.</span></li>
+            </ul>
+          </article>
+        </div>
+
+        <!-- Interactive Knowledge Cut-Off Simulator -->
+        <div class="mt-4 bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <div>
+              <span class="text-xs font-bold uppercase tracking-wider text-teal-700">Interactive Explorer</span>
+              <h4 class="text-sm font-bold text-navy-900">Test a Frozen Model's Knowledge Cut-Off (Simulated Cut-Off: March 2024)</h4>
+            </div>
+            <div class="flex flex-wrap gap-1.5" id="cutoff-buttons">
+              <button type="button" data-cutoff="0" class="tab-btn active-tab text-xs font-medium px-3 py-1.5 rounded-lg border border-slate-200">2017 Transformer Paper</button>
+              <button type="button" data-cutoff="1" class="tab-btn text-xs font-medium px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100">2023 WHO Guidelines</button>
+              <button type="button" data-cutoff="2" class="tab-btn text-xs font-medium px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100">Late 2025 Drug Approval</button>
+              <button type="button" data-cutoff="3" class="tab-btn text-xs font-medium px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100">Today's Patient Lab Result</button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+            <div class="md:col-span-5 bg-slate-50 border border-slate-200 rounded-lg p-3">
+              <div class="flex items-center justify-between text-[11px] font-semibold text-slate-500 mb-2">
+                <span>Training Corpus</span>
+                <span class="text-red-600">Cut-Off: Mar 2024</span>
+                <span>Live World</span>
+              </div>
+              <div class="relative h-3.5 rounded-full bg-slate-200 overflow-visible flex">
+                <div class="w-3/5 bg-teal-500/80 h-full rounded-l-full"></div>
+                <div class="w-1 bg-red-600 h-full"></div>
+                <div class="flex-1 bg-red-200 h-full rounded-r-full"></div>
+                <div id="cutoff-pin" class="absolute -top-1 w-3.5 h-5 rounded-full bg-navy-900 border-2 border-white shadow transition-all duration-300" style="left: 18%"></div>
+              </div>
+              <div class="mt-2.5 flex items-center justify-between text-xs">
+                <span id="cutoff-date-badge" class="font-mono font-semibold px-2 py-0.5 rounded bg-teal-100 text-teal-800">Event Date: June 2017</span>
+                <span id="cutoff-status-badge" class="font-semibold text-teal-700">Inside Training Window</span>
+              </div>
+            </div>
+
+            <div class="md:col-span-7 rounded-lg border p-3.5 text-sm" id="cutoff-output-box">
+              <div class="font-semibold text-navy-900 mb-1" id="cutoff-prompt-text"></div>
+              <p class="text-slate-700 text-xs sm:text-sm leading-relaxed" id="cutoff-response-text"></p>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-auto pt-4">
+          <div class="rounded-xl bg-teal-50 border border-teal-200 px-4 py-2.5 text-xs sm:text-sm text-teal-900 flex items-start gap-2.5">
+            <span class="font-bold text-teal-700 shrink-0">Key Takeaway:</span>
+            <span>Because standalone LLMs have <strong>frozen weights</strong> and a fixed <strong>knowledge cut-off</strong>, modern AI engineering pairs them with <strong>RAG</strong> (for fresh documents) and <strong>Tool Calling / MCP</strong> (for live data).</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================
+         SLIDE 3: MODULE 1 — OPEN-WEIGHT VS PROPRIETARY & HEALTHCARE APPS
+    ========================================================== -->
+    <section id="slide-3" class="slide slide-light" data-module="Module 1: Basics of LLMs" data-title="Open-Weight vs. Proprietary LLMs & Healthcare Applications">
+      <div class="top-accent-bar"></div>
+      <div class="max-w-6xl w-full mx-auto px-5 sm:px-10 py-5 flex-1 flex flex-col">
+        <header class="pb-3 border-b border-slate-200 flex flex-wrap items-end justify-between gap-2">
+          <div>
+            <div class="text-xs font-bold uppercase tracking-wider text-teal-700">Module 1 &bull; Basics of LLMs</div>
+            <h2 class="text-2xl sm:text-3xl font-extrabold text-navy-900 mt-0.5">Open-Weight vs. Proprietary LLMs &amp; Healthcare Applications</h2>
+          </div>
+          <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-50 text-blue-800 border border-blue-200">Model Types &amp; Domain Impact</span>
+        </header>
+
+        <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <article class="accent-card accent-teal p-4">
+            <div class="flex items-center justify-between mb-1.5">
+              <h3 class="text-base font-bold text-teal-700">Open-Weight LLMs</h3>
+              <span class="text-[11px] font-mono px-2 py-0.5 rounded bg-teal-50 text-teal-800 border border-teal-200">Downloadable Weights</span>
+            </div>
+            <p class="text-sm text-slate-600 leading-relaxed">
+              Models whose trained parameter weights are publicly released. Organizations can download, self-host on private infrastructure, audit, quantize, and fine-tune them for specialized domains.
+            </p>
+            <div class="mt-2.5 flex flex-wrap gap-1.5 text-xs">
+              <span class="font-semibold text-slate-500 mr-1">Examples:</span>
+              <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-800 font-medium">Meta Llama 3</span>
+              <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-800 font-medium">Mistral / Mixtral</span>
+              <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-800 font-medium">Google Gemma</span>
+              <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-800 font-medium">Qwen</span>
+            </div>
+          </article>
+
+          <article class="accent-card accent-blue p-4">
+            <div class="flex items-center justify-between mb-1.5">
+              <h3 class="text-base font-bold text-blue-700">Proprietary (Closed) LLMs</h3>
+              <span class="text-[11px] font-mono px-2 py-0.5 rounded bg-blue-50 text-blue-800 border border-blue-200">Managed Cloud API</span>
+            </div>
+            <p class="text-sm text-slate-600 leading-relaxed">
+              Commercial models whose architecture details and trained weights remain private. Users interact with them exclusively through vendor-hosted web apps or pay-as-you-go APIs.
+            </p>
+            <div class="mt-2.5 flex flex-wrap gap-1.5 text-xs">
+              <span class="font-semibold text-slate-500 mr-1">Examples:</span>
+              <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-800 font-medium">OpenAI GPT-4o</span>
+              <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-800 font-medium">Anthropic Claude</span>
+              <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-800 font-medium">Google Gemini</span>
+            </div>
+          </article>
+        </div>
+
+        <div class="mt-4 bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <h4 class="text-sm font-bold text-navy-900">Key Differentiation Matrix</h4>
+            <div class="flex flex-wrap gap-1.5" id="model-cmp-tabs">
+              <button type="button" data-dim="all" class="tab-btn active-tab text-xs font-medium px-2.5 py-1 rounded-md border border-slate-200">All 4 Criteria</button>
+              <button type="button" data-dim="accessibility" class="tab-btn text-xs font-medium px-2.5 py-1 rounded-md border border-slate-200 bg-slate-50 text-slate-700">Accessibility</button>
+              <button type="button" data-dim="usage" class="tab-btn text-xs font-medium px-2.5 py-1 rounded-md border border-slate-200 bg-slate-50 text-slate-700">Usage</button>
+              <button type="button" data-dim="customisation" class="tab-btn text-xs font-medium px-2.5 py-1 rounded-md border border-slate-200 bg-slate-50 text-slate-700">Customisation</button>
+              <button type="button" data-dim="cost" class="tab-btn text-xs font-medium px-2.5 py-1 rounded-md border border-slate-200 bg-slate-50 text-slate-700">Cost</button>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs sm:text-sm">
+              <thead>
+                <tr class="border-b border-slate-200 text-slate-500 text-xs uppercase tracking-wider">
+                  <th class="py-2 pr-3 font-semibold w-36">Criterion</th>
+                  <th class="py-2 px-3 font-semibold text-teal-700">Open-Weight LLMs</th>
+                  <th class="py-2 pl-3 font-semibold text-blue-700">Proprietary LLMs</th>
+                </tr>
+              </thead>
+              <tbody id="model-cmp-tbody" class="divide-y divide-slate-100 text-slate-700"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="mt-4">
+          <div class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Applications of LLMs in Healthcare</div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div class="bg-white border border-slate-200 rounded-lg p-3">
+              <div class="text-xs font-bold text-teal-700 mb-1">Clinical Documentation</div>
+              <p class="text-xs text-slate-600 leading-relaxed">Drafting structured SOAP notes, consultation summaries, and hospital discharge letters from clinician dictation.</p>
+            </div>
+            <div class="bg-white border border-slate-200 rounded-lg p-3">
+              <div class="text-xs font-bold text-blue-700 mb-1">Patient Communication</div>
+              <p class="text-xs text-slate-600 leading-relaxed">Translating dense radiology or pathology reports into clear, empathetic plain-language explanations for patients.</p>
+            </div>
+            <div class="bg-white border border-slate-200 rounded-lg p-3">
+              <div class="text-xs font-bold text-indigo-700 mb-1">Literature &amp; Research Synthesis</div>
+              <p class="text-xs text-slate-600 leading-relaxed">Summarizing systematic reviews, clinical trial abstracts, and extracting study endpoints rapidly.</p>
+            </div>
+            <div class="bg-white border border-slate-200 rounded-lg p-3">
+              <div class="text-xs font-bold text-navy-900 mb-1">Administrative Triage</div>
+              <p class="text-xs text-slate-600 leading-relaxed">Assisting with medical coding suggestions (ICD-10), prior-authorization letters, and intake routing.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================
+         SLIDE 4: MODULE 2 — INFERENCING, PROMPTS, TOKENISATION & EMBEDDINGS
+    ========================================================== -->
+    <section id="slide-4" class="slide slide-light" data-module="Module 2: LLM Inferencing" data-title="Inferencing, Prompts, Tokenisation & Embeddings">
+      <div class="top-accent-bar"></div>
+      <div class="max-w-6xl w-full mx-auto px-5 sm:px-10 py-5 flex-1 flex flex-col">
+        <header class="pb-3 border-b border-slate-200 flex flex-wrap items-end justify-between gap-2">
+          <div>
+            <div class="text-xs font-bold uppercase tracking-wider text-teal-700">Module 2 &bull; LLM Inferencing</div>
+            <h2 class="text-2xl sm:text-3xl font-extrabold text-navy-900 mt-0.5">Inferencing, Prompts, Tokenisation &amp; Embeddings</h2>
+          </div>
+          <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-teal-50 text-teal-800 border border-teal-200">Interactive Tokeniser</span>
+        </header>
+
+        <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+          <div class="accent-card accent-navy p-3.5">
+            <h3 class="text-sm font-bold text-navy-900">Inferencing</h3>
+            <p class="text-xs text-slate-600 mt-1.5 leading-relaxed">
+              The runtime phase where a trained LLM accepts an input prompt and runs forward computations to generate a text response—keeping all weights fixed.
+            </p>
+          </div>
+          <div class="accent-card accent-teal p-3.5">
+            <h3 class="text-sm font-bold text-teal-700">Prompt</h3>
+            <p class="text-xs text-slate-600 mt-1.5 leading-relaxed">
+              The input text (instructions, role framing, context, or constraints) given to the LLM. It steers next-token probabilities to control accuracy, tone, and structure.
+            </p>
+          </div>
+          <div class="accent-card accent-blue p-3.5">
+            <h3 class="text-sm font-bold text-blue-700">Tokenisation</h3>
+            <p class="text-xs text-slate-600 mt-1.5 leading-relaxed">
+              Splitting text into subword units (<strong>tokens</strong>, e.g., via Byte-Pair Encoding) and mapping each to an integer ID so neural networks can process text numerically and handle rare words.
+            </p>
+          </div>
+          <div class="accent-card accent-indigo p-3.5">
+            <h3 class="text-sm font-bold text-indigo-700">Embeddings</h3>
+            <p class="text-xs text-slate-600 mt-1.5 leading-relaxed">
+              Dense numerical vectors encoding semantic meaning. Related concepts (e.g., <em>doctor</em> and <em>physician</em>) sit close together in high-dimensional vector space.
+            </p>
+          </div>
+        </div>
+
+        <div class="mt-4 grid grid-cols-1 lg:grid-cols-12 gap-4 flex-1">
+          <!-- Left: Interactive Subword Tokeniser -->
+          <div class="lg:col-span-7 bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex flex-col">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-2.5">
+              <div>
+                <span class="text-[11px] font-bold uppercase tracking-wider text-blue-700">Live Lab</span>
+                <h4 class="text-sm font-bold text-navy-900">Subword Tokenisation Visualizer</h4>
+              </div>
+              <div class="flex gap-1.5">
+                <button type="button" class="tok-preset text-[11px] px-2.5 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium" data-text="Electrocardiography detects myocardial infarction.">Clinical Term</button>
+                <button type="button" class="tok-preset text-[11px] px-2.5 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium" data-text="Tokenisation converts text into integer IDs!">General</button>
+                <button type="button" class="tok-preset text-[11px] px-2.5 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium" data-text="HbA1c = 7.4% (repeat in 3 months)">Lab Value</button>
+              </div>
+            </div>
+
+            <label for="token-input" class="sr-only">Enter text to tokenise</label>
+            <input id="token-input" type="text" value="Electrocardiography detects myocardial infarction."
+                   class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 font-mono text-navy-900" />
+
+            <div class="mt-3 flex flex-wrap gap-1.5 p-3 bg-slate-50 border border-slate-200 rounded-lg min-h-[78px] items-start content-start" id="token-output"></div>
+
+            <div class="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-600">
+              <div class="flex gap-4">
+                <span>Characters: <strong id="tok-char-count" class="text-navy-900">0</strong></span>
+                <span>Tokens: <strong id="tok-count" class="text-blue-700">0</strong></span>
+                <span>Avg chars/token: <strong id="tok-ratio" class="text-teal-700">0</strong></span>
+              </div>
+              <span class="text-[11px] text-slate-500">Purpose: Compact numerical input &amp; context-window budgeting</span>
+            </div>
+          </div>
+
+          <!-- Right: Interactive Prompt Effect Switcher -->
+          <div class="lg:col-span-5 bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex flex-col">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-teal-700">Prompt Steering</span>
+            <h4 class="text-sm font-bold text-navy-900 mb-2.5">How Different Prompts Change Output</h4>
+
+            <div class="flex gap-1.5 mb-3" id="prompt-tabs">
+              <button type="button" data-prompt="vague" class="tab-btn active-tab text-xs font-medium px-2.5 py-1.5 rounded-lg border border-slate-200 flex-1">Vague Prompt</button>
+              <button type="button" data-prompt="role" class="tab-btn text-xs font-medium px-2.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50 text-slate-700 flex-1">Role + Audience</button>
+              <button type="button" data-prompt="structured" class="tab-btn text-xs font-medium px-2.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50 text-slate-700 flex-1">Structured</button>
+            </div>
+
+            <div class="bg-slate-900 text-slate-200 rounded-lg p-3 text-xs font-mono leading-relaxed mb-2.5">
+              <div class="text-teal-400 text-[10px] uppercase tracking-wider mb-1">Input Prompt</div>
+              <div id="prompt-demo-in"></div>
+            </div>
+
+            <div class="bg-teal-50/70 border border-teal-200 rounded-lg p-3 text-xs text-slate-800 leading-relaxed flex-1">
+              <div class="text-teal-800 font-bold text-[10px] uppercase tracking-wider mb-1">Resulting LLM Response Style</div>
+              <div id="prompt-demo-out"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================
+         SLIDE 5: MODULE 2 — COMPLETE 5-STAGE INFERENCING WORKFLOW
+    ========================================================== -->
+    <section id="slide-5" class="slide slide-light" data-module="Module 2: LLM Inferencing" data-title="Complete End-to-End LLM Inferencing Workflow">
+      <div class="top-accent-bar"></div>
+      <div class="max-w-6xl w-full mx-auto px-5 sm:px-10 py-5 flex-1 flex flex-col">
+        <header class="pb-3 border-b border-slate-200 flex flex-wrap items-end justify-between gap-2">
+          <div>
+            <div class="text-xs font-bold uppercase tracking-wider text-teal-700">Module 2 &bull; LLM Inferencing</div>
+            <h2 class="text-2xl sm:text-3xl font-extrabold text-navy-900 mt-0.5">Complete LLM Inferencing Workflow (5 Stages)</h2>
+          </div>
+          <div class="flex items-center gap-2">
+            <button type="button" id="inf-prev-btn" class="text-xs font-semibold px-3 py-1.5 rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-100">&larr; Prev Stage</button>
+            <button type="button" id="inf-next-btn" class="text-xs font-semibold px-3 py-1.5 rounded-lg bg-teal-600 text-white hover:bg-teal-500">Next Stage &rarr;</button>
+          </div>
+        </header>
+
+        <div class="mt-4 bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+          <div class="grid grid-cols-1 sm:grid-cols-5 gap-2.5 items-stretch" id="inf-pipeline-nodes">
+            <button type="button" data-stage="0" class="stage-node active-node text-left p-3 rounded-lg border-2 border-slate-200 bg-white">
+              <div class="text-[11px] font-bold text-teal-700 uppercase">Stage 1</div>
+              <div class="text-sm font-bold text-navy-900 mt-0.5">Prompt</div>
+              <div class="text-[11px] text-slate-500 mt-1">Raw user text input</div>
+            </button>
+            <button type="button" data-stage="1" class="stage-node text-left p-3 rounded-lg border-2 border-slate-200 bg-white">
+              <div class="text-[11px] font-bold text-blue-700 uppercase">Stage 2</div>
+              <div class="text-sm font-bold text-navy-900 mt-0.5">Tokenisation</div>
+              <div class="text-[11px] text-slate-500 mt-1">Text &rarr; integer IDs</div>
+            </button>
+            <button type="button" data-stage="2" class="stage-node text-left p-3 rounded-lg border-2 border-slate-200 bg-white">
+              <div class="text-[11px] font-bold text-indigo-700 uppercase">Stage 3</div>
+              <div class="text-sm font-bold text-navy-900 mt-0.5">Embeddings</div>
+              <div class="text-[11px] text-slate-500 mt-1">IDs &rarr; semantic vectors</div>
+            </button>
+            <button type="button" data-stage="3" class="stage-node text-left p-3 rounded-lg border-2 border-slate-200 bg-white">
+              <div class="text-[11px] font-bold text-navy-900 uppercase">Stage 4</div>
+              <div class="text-sm font-bold text-navy-900 mt-0.5">Forward Pass</div>
+              <div class="text-[11px] text-slate-500 mt-1">Self-attention layers</div>
+            </button>
+            <button type="button" data-stage="4" class="stage-node text-left p-3 rounded-lg border-2 border-slate-200 bg-white">
+              <div class="text-[11px] font-bold text-teal-700 uppercase">Stage 5</div>
+              <div class="text-sm font-bold text-navy-900 mt-0.5">Next-Token Gen</div>
+              <div class="text-[11px] text-slate-500 mt-1">Autoregressive loop</div>
+            </button>
+          </div>
+        </div>
+
+        <div class="mt-4 grid grid-cols-1 lg:grid-cols-12 gap-4 flex-1">
+          <div class="lg:col-span-7 accent-card accent-teal p-5 flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between">
+                <span id="inf-stage-badge" class="text-xs font-bold uppercase tracking-wider text-teal-700">Stage 1 of 5</span>
+                <span class="text-xs font-mono text-slate-400">Autoregressive Cycle</span>
+              </div>
+              <h3 id="inf-stage-title" class="text-xl font-extrabold text-navy-900 mt-1"></h3>
+              <p id="inf-stage-desc" class="text-sm text-slate-700 mt-2.5 leading-relaxed"></p>
+              <div class="mt-4 code-block p-3.5 text-xs leading-relaxed overflow-x-auto" id="inf-stage-visual"></div>
+            </div>
+            <div class="mt-4 pt-3 border-t border-slate-100 text-xs text-slate-600" id="inf-stage-note"></div>
+          </div>
+
+          <div class="lg:col-span-5 accent-card accent-blue p-5 flex flex-col">
+            <div class="text-[11px] font-bold uppercase tracking-wider text-blue-700">Stage 5 Interactive Lab</div>
+            <h3 class="text-base font-bold text-navy-900 mt-0.5">Next-Token Probability &amp; Temperature</h3>
+            <p class="text-xs text-slate-600 mt-1">
+              Given <span class="inline-code">"Elevated blood glucose indicates..."</span>, adjust temperature to see how the softmax probability distribution shifts:
+            </p>
+
+            <div class="mt-3 bg-slate-50 border border-slate-200 rounded-lg p-3">
+              <div class="flex items-center justify-between text-xs font-semibold mb-1.5">
+                <label for="temp-slider" class="text-slate-700">Temperature</label>
+                <span id="temp-val" class="font-mono text-teal-700 bg-teal-50 px-2 py-0.5 rounded border border-teal-200">0.7</span>
+              </div>
+              <input id="temp-slider" type="range" min="0.1" max="1.6" step="0.1" value="0.7" class="w-full accent-teal-600 cursor-pointer" />
+              <div class="flex justify-between text-[10px] text-slate-500 mt-1">
+                <span>0.1 (Focused / Deterministic)</span>
+                <span>1.6 (Creative / Diverse)</span>
+              </div>
+            </div>
+
+            <div class="mt-3 space-y-2.5 flex-1" id="prob-bars"></div>
+
+            <div class="mt-3 text-[11px] text-slate-500 bg-blue-50/70 border border-blue-100 rounded-lg p-2.5">
+              <strong>Autoregressive Loop:</strong> Once one token is sampled, it is appended to the prompt and the sequence runs through Stages 3–5 again until an end-of-sequence (<span class="inline-code">&lt;EOS&gt;</span>) token is generated.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================
+         SLIDE 6: MODULE 3 — LOCAL VS CLOUD INFERENCING
+    ========================================================== -->
+    <section id="slide-6" class="slide slide-light" data-module="Module 3: Local & Cloud Inferencing" data-title="Local vs. Cloud-Based LLM Inferencing">
+      <div class="top-accent-bar"></div>
+      <div class="max-w-6xl w-full mx-auto px-5 sm:px-10 py-5 flex-1 flex flex-col">
+        <header class="pb-3 border-b border-slate-200 flex flex-wrap items-end justify-between gap-2">
+          <div>
+            <div class="text-xs font-bold uppercase tracking-wider text-teal-700">Module 3 &bull; Local &amp; Cloud Inferencing</div>
+            <h2 class="text-2xl sm:text-3xl font-extrabold text-navy-900 mt-0.5">Local vs. Cloud-Based LLM Inferencing</h2>
+          </div>
+          <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-800 border border-indigo-200">Deployment Architecture</span>
+        </header>
+
+        <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="accent-card accent-teal p-4">
+            <h3 class="text-base font-bold text-teal-700">Local Inferencing</h3>
+            <p class="text-sm text-slate-600 mt-1 leading-relaxed">
+              Running an open-weight model directly on your own laptop, workstation, or on-premise server (e.g., via <strong>Ollama</strong> or <strong>llama.cpp</strong>). Prompts and outputs stay completely inside your local network.
+            </p>
+          </div>
+          <div class="accent-card accent-blue p-4">
+            <h3 class="text-base font-bold text-blue-700">Cloud-Based Inferencing</h3>
+            <p class="text-sm text-slate-600 mt-1 leading-relaxed">
+              Sending prompts over HTTPS to remote GPU clusters hosted by AI providers or gateways (e.g., <strong>OpenRouter</strong>, OpenAI, Anthropic, Google). Provides instant access to frontier-scale models with zero local GPU setup.
+            </p>
+          </div>
+        </div>
+
+        <div class="mt-4 grid grid-cols-1 lg:grid-cols-12 gap-4 flex-1">
+          <div class="lg:col-span-7 bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+            <h4 class="text-sm font-bold text-navy-900 mb-2.5">Core Trade-Offs: Local vs. Cloud</h4>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse text-xs sm:text-sm">
+                <thead>
+                  <tr class="border-b border-slate-200 text-slate-500 text-xs uppercase">
+                    <th class="py-2 pr-2">Dimension</th>
+                    <th class="py-2 px-2 text-teal-700">Local Inferencing</th>
+                    <th class="py-2 pl-2 text-blue-700">Cloud Inferencing</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 text-slate-700">
+                  <tr>
+                    <td class="py-2.5 pr-2 font-bold text-navy-900">Privacy</td>
+                    <td class="py-2.5 px-2">Maximum control; sensitive data stays strictly on-device or behind local firewalls.</td>
+                    <td class="py-2.5 pl-2">Data travels to external servers; requires vendor trust, encryption, and compliance agreements (e.g., BAA).</td>
+                  </tr>
+                  <tr>
+                    <td class="py-2.5 pr-2 font-bold text-navy-900">Cost</td>
+                    <td class="py-2.5 px-2">Upfront hardware &amp; electricity cost; <strong>$0 per token</strong> at runtime.</td>
+                    <td class="py-2.5 pl-2">No upfront GPU purchase; pay-per-token API billing scales with usage volume.</td>
+                  </tr>
+                  <tr>
+                    <td class="py-2.5 pr-2 font-bold text-navy-900">Hardware</td>
+                    <td class="py-2.5 px-2">Requires sufficient RAM / GPU VRAM (8–64+ GB depending on model size &amp; quantization).</td>
+                    <td class="py-2.5 pl-2">Minimal client hardware—runs from any lightweight laptop, browser, or mobile app.</td>
+                  </tr>
+                  <tr>
+                    <td class="py-2.5 pr-2 font-bold text-navy-900">Accessibility</td>
+                    <td class="py-2.5 px-2">Works <strong>completely offline</strong>; requires local setup and model downloads.</td>
+                    <td class="py-2.5 pl-2">Requires active internet connection; instant access to largest frontier models.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="lg:col-span-5 bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex flex-col justify-between">
+            <div>
+              <span class="text-[11px] font-bold uppercase tracking-wider text-indigo-700">Interactive Advisor</span>
+              <h4 class="text-sm font-bold text-navy-900 mb-3">Choose Constraints to Compare Fit</h4>
+
+              <div class="space-y-3 text-xs">
+                <div>
+                  <div class="font-semibold text-slate-700 mb-1">1. Data Sensitivity</div>
+                  <div class="grid grid-cols-2 gap-1.5" id="adv-privacy">
+                    <button type="button" data-val="high" class="tab-btn active-tab py-1.5 px-2 rounded border border-slate-200 font-medium">Strict Private / PHI</button>
+                    <button type="button" data-val="low" class="tab-btn py-1.5 px-2 rounded border border-slate-200 bg-slate-50 text-slate-700 font-medium">Public / De-identified</button>
+                  </div>
+                </div>
+                <div>
+                  <div class="font-semibold text-slate-700 mb-1">2. Local GPU / RAM Hardware</div>
+                  <div class="grid grid-cols-2 gap-1.5" id="adv-hardware">
+                    <button type="button" data-val="strong" class="tab-btn active-tab py-1.5 px-2 rounded border border-slate-200 font-medium">16GB+ RAM / GPU</button>
+                    <button type="button" data-val="basic" class="tab-btn py-1.5 px-2 rounded border border-slate-200 bg-slate-50 text-slate-700 font-medium">Basic Thin Client</button>
+                  </div>
+                </div>
+                <div>
+                  <div class="font-semibold text-slate-700 mb-1">3. Reasoning Complexity</div>
+                  <div class="grid grid-cols-2 gap-1.5" id="adv-scale">
+                    <button type="button" data-val="standard" class="tab-btn active-tab py-1.5 px-2 rounded border border-slate-200 font-medium">Summaries / Extraction</button>
+                    <button type="button" data-val="frontier" class="tab-btn py-1.5 px-2 rounded border border-slate-200 bg-slate-50 text-slate-700 font-medium">Frontier Multi-Step</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div id="adv-result" class="mt-4 p-3.5 rounded-lg bg-teal-50 border border-teal-200 text-xs leading-relaxed"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================
+         SLIDE 7: MODULE 3 — OLLAMA, OPENROUTER & HEALTHCARE DEPLOYMENT
+    ========================================================== -->
+    <section id="slide-7" class="slide slide-light" data-module="Module 3: Local & Cloud Inferencing" data-title="Ollama, OpenRouter & Healthcare Deployment">
+      <div class="top-accent-bar"></div>
+      <div class="max-w-6xl w-full mx-auto px-5 sm:px-10 py-5 flex-1 flex flex-col">
+        <header class="pb-3 border-b border-slate-200 flex flex-wrap items-end justify-between gap-2">
+          <div>
+            <div class="text-xs font-bold uppercase tracking-wider text-teal-700">Module 3 &bull; Local &amp; Cloud Inferencing</div>
+            <h2 class="text-2xl sm:text-3xl font-extrabold text-navy-900 mt-0.5">Practical Tooling: Ollama &amp; OpenRouter</h2>
+          </div>
+          <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-teal-50 text-teal-800 border border-teal-200">CLI Simulator</span>
+        </header>
+
+        <div class="mt-4 grid grid-cols-1 lg:grid-cols-12 gap-4">
+          <div class="lg:col-span-7 accent-card accent-teal p-4 flex flex-col">
+            <div class="flex items-center justify-between">
+              <h3 class="text-base font-bold text-teal-700">Ollama — Local LLM Runtime</h3>
+              <span class="text-[11px] font-mono bg-teal-50 text-teal-800 px-2 py-0.5 rounded border border-teal-200">Local Engine</span>
+            </div>
+            <p class="text-xs sm:text-sm text-slate-600 mt-1.5 leading-relaxed">
+              <strong>Ollama</strong> bundles model weights, quantization, and runtime setup into a single local tool. <strong>4-Step Workflow:</strong> (1) Install Ollama &rarr; (2) Pull weights (<span class="inline-code">ollama pull</span>) &rarr; (3) Run interactively (<span class="inline-code">ollama run</span>) &rarr; (4) Connect apps via local API (<span class="inline-code">localhost:11434</span>).
+            </p>
+
+            <div class="mt-3 flex flex-wrap gap-1.5" id="ollama-tabs">
+              <button type="button" data-cmd="pull" class="tab-btn active-tab text-xs font-mono px-2.5 py-1 rounded border border-slate-200">1. ollama pull</button>
+              <button type="button" data-cmd="run" class="tab-btn text-xs font-mono px-2.5 py-1 rounded border border-slate-200 bg-slate-50 text-slate-700">2. ollama run</button>
+              <button type="button" data-cmd="list" class="tab-btn text-xs font-mono px-2.5 py-1 rounded border border-slate-200 bg-slate-50 text-slate-700">3. ollama list</button>
+              <button type="button" data-cmd="api" class="tab-btn text-xs font-mono px-2.5 py-1 rounded border border-slate-200 bg-slate-50 text-slate-700">4. Local API</button>
+            </div>
+
+            <div class="mt-2.5 code-block p-3.5 text-xs leading-relaxed">
+              <div class="flex items-center gap-1.5 mb-2 pb-1.5 border-b border-slate-700">
+                <span class="w-2.5 h-2.5 rounded-full bg-red-500/80"></span>
+                <span class="w-2.5 h-2.5 rounded-full bg-amber-400/80"></span>
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400/80"></span>
+                <span class="ml-2 text-[11px] text-slate-400 font-mono">terminal — local workstation</span>
+              </div>
+              <pre id="ollama-terminal" class="whitespace-pre-wrap font-mono text-xs text-slate-200 m-0"></pre>
+            </div>
+
+            <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+              <div class="bg-teal-50/70 border border-teal-200 rounded-lg p-2.5">
+                <div class="font-bold text-teal-800 mb-1">Advantages of Local (Ollama)</div>
+                <p class="text-slate-700 leading-snug">Full data privacy, offline execution, zero per-token cost, and reproducible model versions.</p>
+              </div>
+              <div class="bg-red-50/70 border border-red-200 rounded-lg p-2.5">
+                <div class="font-bold text-red-700 mb-1">Limitations of Local</div>
+                <p class="text-slate-700 leading-snug">Bound by local RAM/VRAM, lower reasoning ceiling on small models, slower throughput under concurrent multi-user load.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="lg:col-span-5 flex flex-col gap-4">
+            <div class="accent-card accent-blue p-4">
+              <div class="flex items-center justify-between">
+                <h3 class="text-base font-bold text-blue-700">OpenRouter — Unified Cloud Gateway</h3>
+                <span class="text-[11px] font-mono bg-blue-50 text-blue-800 px-2 py-0.5 rounded border border-blue-200">Multi-Model API</span>
+              </div>
+              <p class="text-xs sm:text-sm text-slate-600 mt-1.5 leading-relaxed">
+                <strong>OpenRouter</strong> provides one OpenAI-compatible API endpoint to access hundreds of proprietary and open-weight LLMs across multiple cloud providers.
+              </p>
+              <div class="mt-2.5 code-block p-2.5 text-[11px] leading-relaxed">
+                <span class="text-teal-300">base_url</span> = "https://openrouter.ai/api/v1"<br/>
+                <span class="text-slate-400"># Swap models by changing 1 string:</span><br/>
+                model = <span class="text-amber-300">"anthropic/claude-3.5-sonnet"</span> <span class="text-slate-500">// or "openai/gpt-4o"</span>
+              </div>
+              <ul class="mt-2.5 space-y-1 text-xs text-slate-700">
+                <li><strong>&bull; Single Key &amp; Billing:</strong> Unified authentication and cost tracking across vendors.</li>
+                <li><strong>&bull; Smart Fallbacks:</strong> Automatically routes around provider outages and latency spikes.</li>
+              </ul>
+            </div>
+
+            <div class="accent-card accent-navy p-4 flex-1">
+              <h3 class="text-sm font-bold text-navy-900 mb-2">Healthcare Applications: Local vs. Cloud</h3>
+              <div class="space-y-2 text-xs text-slate-700">
+                <div class="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
+                  <span class="font-bold text-teal-700">On-Premise / Local (Ollama):</span>
+                  Summarizing identifiable patient EHR notes, automated de-identification pipelines, and clinical intake drafting inside hospital firewalls.
+                </div>
+                <div class="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
+                  <span class="font-bold text-blue-700">Cloud (OpenRouter / Enterprise API):</span>
+                  Synthesizing public medical literature, clinician training simulators, or enterprise-grade reasoning under compliant data agreements.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================
+         SLIDE 8: MODULE 4 — RAG OVERVIEW & ARCHITECTURE DIAGRAM
+    ========================================================== -->
+    <section id="slide-8" class="slide slide-light" data-module="Module 4: RAG" data-title="Retrieval-Augmented Generation (RAG) Architecture">
+      <div class="top-accent-bar"></div>
+      <div class="max-w-6xl w-full mx-auto px-5 sm:px-10 py-5 flex-1 flex flex-col">
+        <header class="pb-3 border-b border-slate-200 flex flex-wrap items-end justify-between gap-2">
+          <div>
+            <div class="text-xs font-bold uppercase tracking-wider text-teal-700">Module 4 &bull; Retrieval-Augmented Generation (RAG)</div>
+            <h2 class="text-2xl sm:text-3xl font-extrabold text-navy-900 mt-0.5">What Is RAG &amp; How the Architecture Works</h2>
+          </div>
+          <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-teal-50 text-teal-800 border border-teal-200">Interactive Architecture</span>
+        </header>
+
+        <p class="mt-3 text-sm text-slate-700 leading-relaxed">
+          <strong>Retrieval-Augmented Generation (RAG)</strong> enhances a frozen LLM by connecting it to an external knowledge base. At query time, the system <em>retrieves</em> the most relevant document passages and injects them into the prompt so the LLM <em>generates</em> an accurate, grounded, and verifiable response.
+        </p>
+
+        <div class="mt-3.5 bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+          <div class="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">Click any stage below to inspect its exact role</div>
+
+          <div class="p-3 rounded-lg bg-slate-50 border border-slate-200 mb-3">
+            <div class="text-xs font-bold text-blue-700 mb-2 flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded bg-blue-100 text-blue-800">Phase 1</span>
+              Offline Indexing Pipeline (Preparing the Knowledge Base)
+            </div>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <button type="button" data-rag="docs" class="stage-node active-node text-left p-2.5 rounded-lg border-2 border-slate-200 bg-white">
+                <div class="text-xs font-bold text-navy-900">1. Source Documents</div>
+                <div class="text-[11px] text-slate-500">PDFs, SOPs, Guidelines</div>
+              </button>
+              <button type="button" data-rag="chunk" class="stage-node text-left p-2.5 rounded-lg border-2 border-slate-200 bg-white">
+                <div class="text-xs font-bold text-navy-900">2. Text Chunking</div>
+                <div class="text-[11px] text-slate-500">Split into passages</div>
+              </button>
+              <button type="button" data-rag="embed" class="stage-node text-left p-2.5 rounded-lg border-2 border-slate-200 bg-white">
+                <div class="text-xs font-bold text-navy-900">3. Embedding Model</div>
+                <div class="text-[11px] text-slate-500">Chunks &rarr; vectors</div>
+              </button>
+              <button type="button" data-rag="vdb" class="stage-node text-left p-2.5 rounded-lg border-2 border-slate-200 bg-white">
+                <div class="text-xs font-bold text-blue-700">4. Vector Database</div>
+                <div class="text-[11px] text-slate-500">Indexed vector store</div>
+              </button>
+            </div>
+          </div>
+
+          <div class="p-3 rounded-lg bg-teal-50/50 border border-teal-200">
+            <div class="text-xs font-bold text-teal-800 mb-2 flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded bg-teal-100 text-teal-800">Phase 2</span>
+              Online Query &amp; Generation Pipeline (At Runtime)
+            </div>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <button type="button" data-rag="query" class="stage-node text-left p-2.5 rounded-lg border-2 border-slate-200 bg-white">
+                <div class="text-xs font-bold text-navy-900">5. User Query &rarr; Vector</div>
+                <div class="text-[11px] text-slate-500">Embed user prompt</div>
+              </button>
+              <button type="button" data-rag="search" class="stage-node text-left p-2.5 rounded-lg border-2 border-slate-200 bg-white">
+                <div class="text-xs font-bold text-teal-700">6. Similarity Search</div>
+                <div class="text-[11px] text-slate-500">Fetch Top-K chunks</div>
+              </button>
+              <button type="button" data-rag="augment" class="stage-node text-left p-2.5 rounded-lg border-2 border-slate-200 bg-white">
+                <div class="text-xs font-bold text-navy-900">7. Prompt Augmentation</div>
+                <div class="text-[11px] text-slate-500">Combine Query + Context</div>
+              </button>
+              <button type="button" data-rag="generate" class="stage-node text-left p-2.5 rounded-lg border-2 border-slate-200 bg-white">
+                <div class="text-xs font-bold text-teal-700">8. Grounded Response</div>
+                <div class="text-[11px] text-slate-500">LLM answers with citations</div>
+              </button>
+            </div>
+          </div>
+
+          <div class="mt-3 p-3.5 rounded-lg bg-navy-900 text-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <div id="rag-detail-title" class="text-sm font-bold text-teal-300"></div>
+              <p id="rag-detail-desc" class="text-xs sm:text-sm text-slate-200 mt-1 leading-relaxed"></p>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-3.5 grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div class="bg-white border border-slate-200 rounded-lg p-3 text-xs">
+            <div class="font-bold text-teal-700 mb-1">Overcomes Knowledge Cut-Off</div>
+            <p class="text-slate-600">Update the knowledge base anytime by indexing new documents—no expensive model retraining needed.</p>
+          </div>
+          <div class="bg-white border border-slate-200 rounded-lg p-3 text-xs">
+            <div class="font-bold text-blue-700 mb-1">Reduces Hallucinations</div>
+            <p class="text-slate-600">Anchors the LLM to verified facts retrieved directly into the context window instead of relying on memory.</p>
+          </div>
+          <div class="bg-white border border-slate-200 rounded-lg p-3 text-xs">
+            <div class="font-bold text-indigo-700 mb-1">Auditability &amp; Privacy</div>
+            <p class="text-slate-600">Enables inline source citations and keeps institutional documents cleanly separated from model weights.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================
+         SLIDE 9: MODULE 4 — TEXT SIMILARITY, EMBEDDINGS & VECTOR DB LAB
+    ========================================================== -->
+    <section id="slide-9" class="slide slide-light" data-module="Module 4: RAG" data-title="Text Similarity, Embeddings & Vector Databases">
+      <div class="top-accent-bar"></div>
+      <div class="max-w-6xl w-full mx-auto px-5 sm:px-10 py-5 flex-1 flex flex-col">
+        <header class="pb-3 border-b border-slate-200 flex flex-wrap items-end justify-between gap-2">
+          <div>
+            <div class="text-xs font-bold uppercase tracking-wider text-teal-700">Module 4 &bull; Retrieval-Augmented Generation (RAG)</div>
+            <h2 class="text-2xl sm:text-3xl font-extrabold text-navy-900 mt-0.5">Text Similarity, Embeddings &amp; Vector Databases</h2>
+          </div>
+          <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-800 border border-indigo-200">Interactive Vector Lab</span>
+        </header>
+
+        <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3.5">
+          <div class="accent-card accent-teal p-3.5">
+            <h3 class="text-sm font-bold text-teal-700">Text Similarity</h3>
+            <p class="text-xs text-slate-600 mt-1 leading-relaxed">
+              Measures semantic closeness beyond exact keywords. Typically computed via <strong>Cosine Similarity</strong> (angle between vectors: <span class="inline-code">1.0</span> = identical meaning, <span class="inline-code">0.0</span> = unrelated).
+            </p>
+          </div>
+          <div class="accent-card accent-blue p-3.5">
+            <h3 class="text-sm font-bold text-blue-700">Role of Embeddings in RAG</h3>
+            <p class="text-xs text-slate-600 mt-1 leading-relaxed">
+              Both document chunks and user queries pass through the <strong>same embedding model</strong> into shared vector space, so <em>"heart attack"</em> matches <em>"myocardial infarction"</em>.
+            </p>
+          </div>
+          <div class="accent-card accent-indigo p-3.5">
+            <h3 class="text-sm font-bold text-indigo-700">Vector Databases</h3>
+            <p class="text-xs text-slate-600 mt-1 leading-relaxed">
+              Specialized stores (<strong>Chroma, FAISS, Pinecone, pgvector</strong>) saving <span class="inline-code">[Vector + Raw Chunk + Metadata]</span> and retrieving <strong>Top-K</strong> nearest neighbors in milliseconds.
+            </p>
+          </div>
+        </div>
+
+        <div class="mt-4 bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex-1 flex flex-col">
+          <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+            <div class="flex flex-wrap items-center gap-1.5" id="rag-query-tabs">
+              <span class="text-xs font-bold text-navy-900 mr-1">Query:</span>
+              <button type="button" data-q="0" class="tab-btn active-tab text-xs font-medium px-2.5 py-1 rounded-lg border border-slate-200">"Heart attack emergency signs"</button>
+              <button type="button" data-q="1" class="tab-btn text-xs font-medium px-2.5 py-1 rounded-lg border border-slate-200 bg-slate-50 text-slate-700">"Metformin renal dosing limit"</button>
+              <button type="button" data-q="2" class="tab-btn text-xs font-medium px-2.5 py-1 rounded-lg border border-slate-200 bg-slate-50 text-slate-700">"Hospital data backup policy"</button>
+            </div>
+            <div class="flex items-center gap-2 text-xs">
+              <label for="topk-select" class="font-semibold text-slate-700">Top-K Retrieved:</label>
+              <select id="topk-select" class="border border-slate-300 rounded-md px-2 py-1 text-xs font-semibold text-teal-800 bg-teal-50">
+                <option value="1">K = 1</option>
+                <option value="2" selected>K = 2</option>
+                <option value="3">K = 3</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center flex-1">
+            <div class="lg:col-span-5 bg-slate-50 border border-slate-200 rounded-lg p-2.5">
+              <div class="text-[11px] font-semibold text-slate-500 text-center mb-1">2D Semantic Vector Projection</div>
+              <svg id="vector-svg" viewBox="0 0 320 210" class="w-full h-48 block" role="img" aria-label="2D Semantic Vector Space Plot"></svg>
+            </div>
+
+            <div class="lg:col-span-7 space-y-2" id="vector-chunks-list"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================
+         SLIDE 10: MODULE 4 — STANDARD LLM VS RAG & HEALTHCARE APPS
+    ========================================================== -->
+    <section id="slide-10" class="slide slide-light" data-module="Module 4: RAG" data-title="Standard LLM vs. RAG-Based LLM & Healthcare Applications">
+      <div class="top-accent-bar"></div>
+      <div class="max-w-6xl w-full mx-auto px-5 sm:px-10 py-5 flex-1 flex flex-col">
+        <header class="pb-3 border-b border-slate-200 flex flex-wrap items-end justify-between gap-2">
+          <div>
+            <div class="text-xs font-bold uppercase tracking-wider text-teal-700">Module 4 &bull; Retrieval-Augmented Generation (RAG)</div>
+            <h2 class="text-2xl sm:text-3xl font-extrabold text-navy-900 mt-0.5">Standard LLM vs. RAG-Based LLM &amp; Healthcare Impact</h2>
+          </div>
+          <div class="flex gap-1.5" id="rag-cmp-tabs">
+            <button type="button" data-sc="0" class="tab-btn active-tab text-xs font-medium px-2.5 py-1 rounded-lg border border-slate-200">Sepsis Protocol</button>
+            <button type="button" data-sc="1" class="tab-btn text-xs font-medium px-2.5 py-1 rounded-lg border border-slate-200 bg-slate-50 text-slate-700">Formulary Check</button>
+            <button type="button" data-sc="2" class="tab-btn text-xs font-medium px-2.5 py-1 rounded-lg border border-slate-200 bg-slate-50 text-slate-700">Patient History</button>
+          </div>
+        </header>
+
+        <div class="mt-3.5 bg-navy-900 text-white rounded-lg px-4 py-2.5 text-xs sm:text-sm flex items-center gap-2">
+          <span class="px-2 py-0.5 rounded bg-teal-500/25 text-teal-300 font-mono text-[11px] font-bold shrink-0">QUERY</span>
+          <span id="rag-cmp-query" class="font-medium"></span>
+        </div>
+
+        <div class="mt-3.5 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <article class="accent-card accent-crimson accent-crimson-bg p-4 flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <h3 class="text-base font-bold text-red-700">Standard (Frozen) LLM Response</h3>
+                <span class="text-[11px] font-semibold px-2 py-0.5 rounded bg-red-100 text-red-800">No External Context</span>
+              </div>
+              <p id="rag-cmp-std" class="text-sm text-slate-800 leading-relaxed"></p>
+            </div>
+            <div id="rag-cmp-std-risk" class="mt-3 pt-2.5 border-t border-red-200 text-xs font-semibold text-red-700"></div>
+          </article>
+
+          <article class="accent-card accent-teal p-4 flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <h3 class="text-base font-bold text-teal-700">RAG-Based LLM Response</h3>
+                <span class="text-[11px] font-semibold px-2 py-0.5 rounded bg-teal-100 text-teal-800">Retrieved &amp; Grounded</span>
+              </div>
+              <div class="mb-2.5 p-2.5 rounded bg-slate-50 border border-slate-200 text-[11px] font-mono text-slate-700">
+                <span class="text-teal-700 font-bold">Retrieved Chunk:</span> <span id="rag-cmp-chunk"></span>
+              </div>
+              <p id="rag-cmp-rag" class="text-sm text-slate-800 leading-relaxed"></p>
+            </div>
+            <div id="rag-cmp-rag-benefit" class="mt-3 pt-2.5 border-t border-teal-100 text-xs font-semibold text-teal-700"></div>
+          </article>
+        </div>
+
+        <div class="mt-4">
+          <div class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Key Applications of RAG in Healthcare</div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div class="bg-white border border-slate-200 rounded-lg p-3 text-xs">
+              <div class="font-bold text-teal-700 mb-1">Clinical Practice Guidelines</div>
+              <p class="text-slate-600">Instant, cited Q&amp;A over latest WHO, NICE, or hospital-specific treatment protocols.</p>
+            </div>
+            <div class="bg-white border border-slate-200 rounded-lg p-3 text-xs">
+              <div class="font-bold text-blue-700 mb-1">Longitudinal EHR Summarization</div>
+              <p class="text-slate-600">Retrieving relevant past discharge notes, allergies, and imaging findings across years of records.</p>
+            </div>
+            <div class="bg-white border border-slate-200 rounded-lg p-3 text-xs">
+              <div class="font-bold text-indigo-700 mb-1">Formulary &amp; Drug Safety</div>
+              <p class="text-slate-600">Grounding dosage guidance and contraindications directly in verified pharmacological databases.</p>
+            </div>
+            <div class="bg-white border border-slate-200 rounded-lg p-3 text-xs">
+              <div class="font-bold text-navy-900 mb-1">Evidence-Based Research</div>
+              <p class="text-slate-600">Synthesizing newly published peer-reviewed papers with exact section citations for clinicians.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================
+         SLIDE 11: MODULE 5 — TOOL CALLING & STEP-BY-STEP EXECUTION
+    ========================================================== -->
+    <section id="slide-11" class="slide slide-light" data-module="Module 5: Tool Calling & MCP" data-title="Tool Calling: Giving LLMs External Capabilities">
+      <div class="top-accent-bar"></div>
+      <div class="max-w-6xl w-full mx-auto px-5 sm:px-10 py-5 flex-1 flex flex-col">
+        <header class="pb-3 border-b border-slate-200 flex flex-wrap items-end justify-between gap-2">
+          <div>
+            <div class="text-xs font-bold uppercase tracking-wider text-teal-700">Module 5 &bull; Tool Calling &amp; MCP</div>
+            <h2 class="text-2xl sm:text-3xl font-extrabold text-navy-900 mt-0.5">Tool Calling: Bridging Language Models &amp; Live Actions</h2>
+          </div>
+          <div class="flex items-center gap-2">
+            <button type="button" id="tc-prev-btn" class="text-xs font-semibold px-3 py-1.5 rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-100">&larr; Prev Step</button>
+            <button type="button" id="tc-next-btn" class="text-xs font-semibold px-3 py-1.5 rounded-lg bg-teal-600 text-white hover:bg-teal-500">Next Step &rarr;</button>
+          </div>
+        </header>
+
+        <div class="mt-4 grid grid-cols-1 lg:grid-cols-12 gap-4 flex-1">
+          <div class="lg:col-span-5 flex flex-col gap-3.5">
+            <article class="accent-card accent-blue p-4">
+              <h3 class="text-base font-bold text-blue-700">Why Tool Calling Is Required</h3>
+              <p class="text-xs sm:text-sm text-slate-600 mt-1.5 leading-relaxed">
+                Even with RAG, an LLM only reads indexed text—it cannot natively query live APIs, execute deterministic math, check real-time schedules, or trigger external actions.
+              </p>
+              <ul class="mt-2.5 space-y-1.5 text-xs text-slate-700">
+                <li><strong>&bull; Real-Time Data:</strong> Fetches live lab values, inventory, or database records.</li>
+                <li><strong>&bull; Deterministic Accuracy:</strong> Delegates formulas (e.g., eGFR, dosage) to verified code.</li>
+                <li><strong>&bull; Action Execution:</strong> Books appointments, triggers alerts, or updates records safely.</li>
+              </ul>
+            </article>
+
+            <article class="accent-card accent-crimson accent-crimson-bg p-4">
+              <h3 class="text-sm font-bold text-red-700">Critical Execution Boundary</h3>
+              <p class="text-xs text-slate-700 mt-1 leading-relaxed">
+                The LLM <strong>never executes code or APIs directly</strong>. It only emits a structured JSON request naming the tool and arguments. The <strong>host application</strong> validates permissions, runs the function, and passes the result back to the LLM.
+              </p>
+            </article>
+          </div>
+
+          <div class="lg:col-span-7 bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex flex-col">
+            <div class="flex items-center justify-between mb-3">
+              <div>
+                <span class="text-[11px] font-bold uppercase tracking-wider text-teal-700">Interactive Trace</span>
+                <h4 class="text-sm font-bold text-navy-900">Working Process of Tool Calling (6 Steps)</h4>
+              </div>
+              <span id="tc-step-counter" class="text-xs font-mono font-bold px-2.5 py-1 rounded bg-teal-50 text-teal-800 border border-teal-200">Step 1 / 6</span>
+            </div>
+
+            <div class="grid grid-cols-6 gap-1.5 mb-3" id="tc-step-pills">
+              <button type="button" data-tc="0" class="tab-btn active-tab text-[11px] font-bold py-1.5 rounded border border-slate-200">1. Query</button>
+              <button type="button" data-tc="1" class="tab-btn text-[11px] font-bold py-1.5 rounded border border-slate-200 bg-slate-50 text-slate-700">2. Schema</button>
+              <button type="button" data-tc="2" class="tab-btn text-[11px] font-bold py-1.5 rounded border border-slate-200 bg-slate-50 text-slate-700">3. JSON Call</button>
+              <button type="button" data-tc="3" class="tab-btn text-[11px] font-bold py-1.5 rounded border border-slate-200 bg-slate-50 text-slate-700">4. Execute</button>
+              <button type="button" data-tc="4" class="tab-btn text-[11px] font-bold py-1.5 rounded border border-slate-200 bg-slate-50 text-slate-700">5. Return</button>
+              <button type="button" data-tc="5" class="tab-btn text-[11px] font-bold py-1.5 rounded border border-slate-200 bg-slate-50 text-slate-700">6. Answer</button>
+            </div>
+
+            <div class="p-3 rounded-lg bg-slate-50 border border-slate-200 mb-3">
+              <div id="tc-title" class="text-sm font-bold text-navy-900"></div>
+              <p id="tc-desc" class="text-xs text-slate-600 mt-1 leading-relaxed"></p>
+            </div>
+
+            <div class="code-block p-3.5 text-xs leading-relaxed flex-1 overflow-x-auto">
+              <div class="text-[10px] uppercase tracking-wider text-teal-400 mb-1.5 font-mono" id="tc-code-label">Payload</div>
+              <pre id="tc-code" class="whitespace-pre-wrap font-mono text-xs text-slate-200 m-0"></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================
+         SLIDE 12: MODULE 5 — MCP DEEP DIVE 1: PURPOSE, ARCHITECTURE & PRIMITIVES
+    ========================================================== -->
+    <section id="slide-12" class="slide slide-light" data-module="Module 5: Tool Calling & MCP" data-title="Model Context Protocol (MCP): Architecture & Core Primitives">
+      <div class="top-accent-bar"></div>
+      <div class="max-w-6xl w-full mx-auto px-5 sm:px-10 py-5 flex-1 flex flex-col">
+        <header class="pb-3 border-b border-slate-200 flex flex-wrap items-end justify-between gap-2">
+          <div>
+            <div class="text-xs font-bold uppercase tracking-wider text-teal-700">Module 5 &bull; Model Context Protocol (MCP)</div>
+            <h2 class="text-2xl sm:text-3xl font-extrabold text-navy-900 mt-0.5">Model Context Protocol (MCP): Architecture &amp; Core Primitives</h2>
+          </div>
+          <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-teal-50 text-teal-800 border border-teal-200">USB-C for AI Applications</span>
+        </header>
+
+        <p class="mt-2.5 text-sm text-slate-700 leading-relaxed">
+          The <strong>Model Context Protocol (MCP)</strong> is an open, JSON-RPC 2.0 standard that defines a universal way for AI applications to discover and interact with external tools, databases, and context sources—eliminating brittle custom glue code between every model and every API.
+        </p>
+
+        <div class="mt-3 grid grid-cols-1 lg:grid-cols-12 gap-4">
+          <!-- Left: Interactive N x M vs N + M Scaling Visualizer -->
+          <div class="lg:col-span-6 bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex flex-col">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+              <h4 class="text-sm font-bold text-navy-900">Why MCP Matters: N &times; M vs. N + M</h4>
+              <div class="flex gap-1.5" id="mcp-mode-tabs">
+                <button type="button" data-mode="nxm" class="tab-btn text-xs font-semibold px-2.5 py-1 rounded border border-slate-200 bg-slate-50 text-slate-700">Traditional (N &times; M)</button>
+                <button type="button" data-mode="npm" class="tab-btn active-tab text-xs font-semibold px-2.5 py-1 rounded border border-slate-200">With MCP (N + M)</button>
+              </div>
+            </div>
+
+            <!-- Interactive Scale Sliders -->
+            <div class="grid grid-cols-2 gap-3 mb-2.5 bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs">
+              <div>
+                <div class="flex justify-between font-semibold text-slate-700 mb-1">
+                  <label for="mcp-n-slider">AI Apps (N)</label>
+                  <span id="mcp-n-val" class="font-mono text-navy-900">3</span>
+                </div>
+                <input id="mcp-n-slider" type="range" min="2" max="5" step="1" value="3" class="w-full accent-teal-600 cursor-pointer" />
+              </div>
+              <div>
+                <div class="flex justify-between font-semibold text-slate-700 mb-1">
+                  <label for="mcp-m-slider">Data / Tools (M)</label>
+                  <span id="mcp-m-val" class="font-mono text-blue-700">3</span>
+                </div>
+                <input id="mcp-m-slider" type="range" min="2" max="5" step="1" value="3" class="w-full accent-blue-600 cursor-pointer" />
+              </div>
+            </div>
+
+            <div class="bg-slate-50 border border-slate-200 rounded-lg p-1.5 flex items-center justify-center">
+              <svg id="mcp-svg" viewBox="0 0 420 190" class="w-full h-44 block" role="img" aria-label="MCP Integration Complexity Diagram"></svg>
+            </div>
+
+            <div id="mcp-mode-caption" class="mt-2 p-2.5 rounded-lg text-xs font-medium"></div>
+          </div>
+
+          <!-- Right: Interactive 4-Layer Architecture Inspector -->
+          <div class="lg:col-span-6 bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex flex-col">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-blue-700">4-Layer Architecture Inspector</span>
+            <h4 class="text-sm font-bold text-navy-900 mb-2">Click Any Component to Inspect Its Role &amp; Transport</h4>
+
+            <div class="grid grid-cols-2 gap-2 mb-2.5" id="mcp-comp-buttons">
+              <button type="button" data-comp="host" class="stage-node active-node text-left p-2.5 rounded-lg border-2 border-slate-200 bg-white">
+                <div class="text-xs font-bold text-navy-900">1. MCP Host</div>
+                <div class="text-[11px] text-slate-500">AI App &amp; Security Boundary</div>
+              </button>
+              <button type="button" data-comp="client" class="stage-node text-left p-2.5 rounded-lg border-2 border-slate-200 bg-white">
+                <div class="text-xs font-bold text-blue-700">2. MCP Client</div>
+                <div class="text-[11px] text-slate-500">1:1 JSON-RPC Connector</div>
+              </button>
+              <button type="button" data-comp="server" class="stage-node text-left p-2.5 rounded-lg border-2 border-slate-200 bg-white">
+                <div class="text-xs font-bold text-teal-700">3. MCP Server</div>
+                <div class="text-[11px] text-slate-500">Exposes Tools &amp; Resources</div>
+              </button>
+              <button type="button" data-comp="external" class="stage-node text-left p-2.5 rounded-lg border-2 border-slate-200 bg-white">
+                <div class="text-xs font-bold text-indigo-700">4. External Sources</div>
+                <div class="text-[11px] text-slate-500">DBs, REST/FHIR APIs, Files</div>
+              </button>
+            </div>
+
+            <div class="p-3.5 rounded-lg bg-slate-900 text-slate-100 flex-1 flex flex-col justify-between">
+              <div>
+                <div id="mcp-comp-title" class="text-sm font-bold text-teal-300"></div>
+                <p id="mcp-comp-desc" class="text-xs text-slate-200 mt-1.5 leading-relaxed"></p>
+              </div>
+              <div class="mt-2.5 pt-2 border-t border-slate-700 text-[11px] font-mono text-teal-200" id="mcp-comp-primitives"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3 Core MCP Server Primitives -->
+        <div class="mt-3.5">
+          <div class="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">What an MCP Server Exposes: 3 Standardized Primitives</div>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div class="accent-card accent-teal p-3 text-xs">
+              <div class="flex items-center justify-between mb-1">
+                <span class="font-bold text-teal-700">1. Tools</span>
+                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-teal-50 text-teal-800">Model-Controlled</span>
+              </div>
+              <p class="text-slate-600 leading-snug">Executable functions the LLM can call with structured arguments to query live APIs, run calculations, or trigger actions (e.g., <span class="inline-code">get_latest_lab</span>).</p>
+            </div>
+            <div class="accent-card accent-blue p-3 text-xs">
+              <div class="flex items-center justify-between mb-1">
+                <span class="font-bold text-blue-700">2. Resources</span>
+                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-blue-50 text-blue-800">App-Controlled</span>
+              </div>
+              <p class="text-slate-600 leading-snug">Read-only contextual data addressed via URIs—such as documents, database schemas, or patient summaries (e.g., <span class="inline-code">ehr://patient/1042</span>).</p>
+            </div>
+            <div class="accent-card accent-indigo p-3 text-xs">
+              <div class="flex items-center justify-between mb-1">
+                <span class="font-bold text-indigo-700">3. Prompts</span>
+                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-800">User-Controlled</span>
+              </div>
+              <p class="text-slate-600 leading-snug">Reusable, server-defined prompt templates that guide consistent multi-step workflows (e.g., <span class="inline-code">/discharge-summary</span> or <span class="inline-code">/drug-review</span>).</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================
+         SLIDE 13: MODULE 5 — MCP DEEP DIVE 2: END-TO-END SEQUENCE & COMPARISON
+    ========================================================== -->
+    <section id="slide-13" class="slide slide-light" data-module="Module 5: Tool Calling & MCP" data-title="How MCP Works End-to-End: Discovery & Execution Flow">
+      <div class="top-accent-bar"></div>
+      <div class="max-w-6xl w-full mx-auto px-5 sm:px-10 py-5 flex-1 flex flex-col">
+        <header class="pb-3 border-b border-slate-200 flex flex-wrap items-end justify-between gap-2">
+          <div>
+            <div class="text-xs font-bold uppercase tracking-wider text-teal-700">Module 5 &bull; Model Context Protocol (MCP)</div>
+            <h2 class="text-2xl sm:text-3xl font-extrabold text-navy-900 mt-0.5">How MCP Connects AI Apps to External Data &amp; Tools</h2>
+          </div>
+          <div class="flex items-center gap-2">
+            <button type="button" id="seq-prev-btn" class="text-xs font-semibold px-3 py-1.5 rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-100">&larr; Prev Step</button>
+            <button type="button" id="seq-next-btn" class="text-xs font-semibold px-3 py-1.5 rounded-lg bg-teal-600 text-white hover:bg-teal-500">Next Step &rarr;</button>
+          </div>
+        </header>
+
+        <!-- Interactive 5-Actor Sequence Visualizer -->
+        <div class="mt-3.5 bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex-1 flex flex-col">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <div>
+              <span class="text-[11px] font-bold uppercase tracking-wider text-teal-700">Interactive 8-Step Sequence Diagram</span>
+              <h4 class="text-sm font-bold text-navy-900">End-to-End MCP Runtime Lifecycle (Discovery &rarr; Invocation &rarr; Grounded Answer)</h4>
+            </div>
+            <div class="flex flex-wrap gap-1" id="seq-step-pills">
+              <button type="button" data-seq="0" class="tab-btn active-tab text-[11px] font-bold px-2 py-1 rounded border border-slate-200">1</button>
+              <button type="button" data-seq="1" class="tab-btn text-[11px] font-bold px-2 py-1 rounded border border-slate-200 bg-slate-50 text-slate-700">2</button>
+              <button type="button" data-seq="2" class="tab-btn text-[11px] font-bold px-2 py-1 rounded border border-slate-200 bg-slate-50 text-slate-700">3</button>
+              <button type="button" data-seq="3" class="tab-btn text-[11px] font-bold px-2 py-1 rounded border border-slate-200 bg-slate-50 text-slate-700">4</button>
+              <button type="button" data-seq="4" class="tab-btn text-[11px] font-bold px-2 py-1 rounded border border-slate-200 bg-slate-50 text-slate-700">5</button>
+              <button type="button" data-seq="5" class="tab-btn text-[11px] font-bold px-2 py-1 rounded border border-slate-200 bg-slate-50 text-slate-700">6</button>
+              <button type="button" data-seq="6" class="tab-btn text-[11px] font-bold px-2 py-1 rounded border border-slate-200 bg-slate-50 text-slate-700">7</button>
+              <button type="button" data-seq="7" class="tab-btn text-[11px] font-bold px-2 py-1 rounded border border-slate-200 bg-slate-50 text-slate-700">8</button>
+            </div>
+          </div>
+
+          <!-- 5-Actor SVG Swimlane -->
+          <div class="bg-slate-50 border border-slate-200 rounded-lg p-2 overflow-x-auto">
+            <svg id="mcp-seq-svg" viewBox="0 0 760 220" class="w-full min-w-[580px] h-52 block" role="img" aria-label="5-Actor MCP Sequence Diagram"></svg>
+          </div>
+
+          <!-- Active Step Detail + JSON-RPC Wire Message -->
+          <div class="mt-3 grid grid-cols-1 lg:grid-cols-12 gap-3 items-stretch">
+            <div class="lg:col-span-6 p-3.5 rounded-lg bg-teal-50/70 border border-teal-200 flex flex-col justify-center">
+              <div id="seq-detail-title" class="text-sm font-bold text-teal-900"></div>
+              <p id="seq-detail-desc" class="text-xs text-slate-700 mt-1 leading-relaxed"></p>
+            </div>
+            <div class="lg:col-span-6 code-block p-3 text-[11px] leading-relaxed overflow-x-auto">
+              <div class="text-[10px] uppercase tracking-wider text-teal-400 mb-1 font-mono" id="seq-wire-label">Protocol Message</div>
+              <pre id="seq-wire-code" class="whitespace-pre-wrap font-mono text-[11px] text-slate-200 m-0"></pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bottom Comparison Strip: Tool Calling vs MCP -->
+        <div class="mt-3.5 grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div class="rounded-xl bg-blue-50 border border-blue-200 px-4 py-2.5 text-xs text-slate-800">
+            <span class="font-bold text-blue-800">Tool Calling (Model Capability):</span>
+            The LLM's ability to decide <em>when</em> an external function is needed and output structured JSON arguments.
+          </div>
+          <div class="rounded-xl bg-teal-50 border border-teal-200 px-4 py-2.5 text-xs text-slate-800">
+            <span class="font-bold text-teal-800">MCP (Connection Standard):</span>
+            The open client–server protocol (over <span class="inline-code">stdio</span> or <span class="inline-code">HTTP/SSE</span>) that lets any AI app dynamically discover and invoke external tools and data sources uniformly.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================
+         SLIDE 14: MODULE 5 — HEALTHCARE APPLICATIONS OF TOOL CALLING & MCP
+    ========================================================== -->
+    <section id="slide-14" class="slide slide-light" data-module="Module 5: Tool Calling & MCP" data-title="Tool Calling & MCP in Healthcare Workflows">
+      <div class="top-accent-bar"></div>
+      <div class="max-w-6xl w-full mx-auto px-5 sm:px-10 py-5 flex-1 flex flex-col">
+        <header class="pb-3 border-b border-slate-200 flex flex-wrap items-end justify-between gap-2">
+          <div>
+            <div class="text-xs font-bold uppercase tracking-wider text-teal-700">Module 5 &bull; Tool Calling &amp; MCP</div>
+            <h2 class="text-2xl sm:text-3xl font-extrabold text-navy-900 mt-0.5">Tool Calling &amp; MCP in Healthcare</h2>
+          </div>
+          <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-50 text-blue-800 border border-blue-200">Domain Workflows</span>
+        </header>
+
+        <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3" id="hc-mcp-cards">
+          <button type="button" data-hc="0" class="stage-node active-node text-left p-4 rounded-xl border-2 border-slate-200 bg-white">
+            <div class="text-[11px] font-bold uppercase text-teal-700">Workflow 1</div>
+            <div class="text-sm font-bold text-navy-900 mt-0.5">EHR / FHIR Lab Retrieval</div>
+            <p class="text-xs text-slate-600 mt-1">Query live patient labs, vitals, and allergies via a standardized FHIR MCP server.</p>
+          </button>
+          <button type="button" data-hc="1" class="stage-node text-left p-4 rounded-xl border-2 border-slate-200 bg-white">
+            <div class="text-[11px] font-bold uppercase text-blue-700">Workflow 2</div>
+            <div class="text-sm font-bold text-navy-900 mt-0.5">Clinical Calculators</div>
+            <p class="text-xs text-slate-600 mt-1">Delegate eGFR, BMI, or weight-based dosing to deterministic verified functions.</p>
+          </button>
+          <button type="button" data-hc="2" class="stage-node text-left p-4 rounded-xl border-2 border-slate-200 bg-white">
+            <div class="text-[11px] font-bold uppercase text-indigo-700">Workflow 3</div>
+            <div class="text-sm font-bold text-navy-900 mt-0.5">Drug Interaction Checks</div>
+            <p class="text-xs text-slate-600 mt-1">Verify active prescriptions against live pharmacological interaction APIs.</p>
+          </button>
+          <button type="button" data-hc="3" class="stage-node text-left p-4 rounded-xl border-2 border-slate-200 bg-white">
+            <div class="text-[11px] font-bold uppercase text-navy-900">Workflow 4</div>
+            <div class="text-sm font-bold text-navy-900 mt-0.5">Care Coordination</div>
+            <p class="text-xs text-slate-600 mt-1">Check clinic slots and draft follow-up appointment bookings through scheduling APIs.</p>
+          </button>
+        </div>
+
+        <div class="mt-4 bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 items-center">
+          <div class="lg:col-span-6">
+            <div class="text-xs font-bold uppercase tracking-wider text-teal-700" id="hc-detail-tag">Selected Workflow</div>
+            <h3 class="text-lg font-extrabold text-navy-900 mt-0.5" id="hc-detail-title"></h3>
+            <p class="text-sm text-slate-600 mt-2 leading-relaxed" id="hc-detail-desc"></p>
+            <div class="mt-3 flex flex-wrap gap-2 text-xs">
+              <span class="px-2.5 py-1 rounded bg-slate-100 text-slate-800 font-medium"><strong>MCP Server:</strong> <span id="hc-detail-server" class="font-mono"></span></span>
+              <span class="px-2.5 py-1 rounded bg-teal-50 text-teal-800 font-medium"><strong>Data Source:</strong> <span id="hc-detail-source"></span></span>
+            </div>
+          </div>
+          <div class="lg:col-span-6 code-block p-4 text-xs leading-relaxed">
+            <div class="text-[10px] uppercase tracking-wider text-teal-400 mb-1.5 font-mono">Example MCP Tool Invocation &amp; Output</div>
+            <pre id="hc-detail-code" class="whitespace-pre-wrap font-mono text-xs text-slate-200 m-0"></pre>
+          </div>
+        </div>
+
+        <div class="mt-4">
+          <div class="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-xs sm:text-sm text-red-900 flex items-start gap-2.5">
+            <span class="font-extrabold text-red-700 shrink-0 uppercase tracking-wide text-xs mt-0.5">Safety Boundary:</span>
+            <span>In high-stakes domains like healthcare, tool calling and MCP servers must enforce <strong>read-only defaults</strong>, strict schema validation, role-based access control, audit logging, and <strong>human-in-the-loop confirmation</strong> before any write action or clinical decision.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================
+         SLIDE 15: DARK CLOSING SYNTHESIS SLIDE
+    ========================================================== -->
+    <section id="slide-15" class="slide slide-dark" data-module="Synthesis" data-title="Architecture Synthesis: The AI Engineering Stack">
+      <div class="w-full h-full flex flex-col justify-between relative">
+        <div class="hidden sm:block absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-teal-400 via-blue-500 to-indigo-500"></div>
+
+        <div class="max-w-6xl w-full mx-auto px-6 sm:px-12 py-7 my-auto">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-500/15 border border-teal-400/35 text-teal-300 text-xs font-semibold tracking-wider uppercase mb-3">
+            Complete Architecture Synthesis
+          </div>
+          <h2 class="text-2xl sm:text-4xl font-extrabold text-white tracking-tight">
+            Putting the <span class="text-teal-400">AI Engineering Stack</span> Together
+          </h2>
+          <p class="mt-2 text-sm sm:text-base text-slate-300 max-w-3xl">
+            Each layer solves a specific limitation of the layer before it. Select any layer below to review its core mechanism, tools, and link back to its detailed notes.
+          </p>
+
+          <div class="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3" id="synth-cards">
+            <button type="button" data-synth="0" class="text-left p-4 rounded-xl bg-slate-800/90 border-2 border-teal-400 transition">
+              <div class="text-xs font-semibold text-slate-400">1. LLM Basics</div>
+              <div class="text-xl font-extrabold tracking-wide text-teal-400 mt-1">KNOWS</div>
+              <div class="text-xs text-slate-300 mt-1.5 leading-snug">Frozen parametric knowledge up to cut-off</div>
+            </button>
+
+            <button type="button" data-synth="1" class="text-left p-4 rounded-xl bg-slate-800/70 border-2 border-slate-700 hover:border-slate-500 transition">
+              <div class="text-xs font-semibold text-slate-400">2. Inferencing</div>
+              <div class="text-xl font-extrabold tracking-wide text-blue-400 mt-1">GENERATES</div>
+              <div class="text-xs text-slate-300 mt-1.5 leading-snug">Tokens, embeddings &amp; next-token loop</div>
+            </button>
+
+            <button type="button" data-synth="2" class="text-left p-4 rounded-xl bg-slate-800/70 border-2 border-slate-700 hover:border-slate-500 transition">
+              <div class="text-xs font-semibold text-slate-400">3. Deployment</div>
+              <div class="text-xl font-extrabold tracking-wide text-sky-400 mt-1">RUNS</div>
+              <div class="text-xs text-slate-300 mt-1.5 leading-snug">Local (Ollama) vs. Cloud (OpenRouter)</div>
+            </button>
+
+            <button type="button" data-synth="3" class="text-left p-4 rounded-xl bg-slate-800/70 border-2 border-slate-700 hover:border-slate-500 transition">
+              <div class="text-xs font-semibold text-slate-400">4. RAG</div>
+              <div class="text-xl font-extrabold tracking-wide text-emerald-400 mt-1">RETRIEVES</div>
+              <div class="text-xs text-slate-300 mt-1.5 leading-snug">Vector DB similarity for grounded answers</div>
+            </button>
+
+            <button type="button" data-synth="4" class="text-left p-4 rounded-xl bg-slate-800/70 border-2 border-slate-700 hover:border-slate-500 transition">
+              <div class="text-xs font-semibold text-slate-400">5. Tool Calling &amp; MCP</div>
+              <div class="text-xl font-extrabold tracking-wide text-indigo-400 mt-1">CONNECTS</div>
+              <div class="text-xs text-slate-300 mt-1.5 leading-snug">Standardized live APIs &amp; external tools</div>
+            </button>
+          </div>
+
+          <div class="mt-5 rounded-xl bg-slate-900/90 border border-teal-500/45 p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <div id="synth-detail-title" class="text-base font-bold text-teal-300"></div>
+              <p id="synth-detail-body" class="text-xs sm:text-sm text-slate-200 mt-1.5 leading-relaxed max-w-3xl"></p>
+            </div>
+            <button type="button" id="synth-jump-btn" class="shrink-0 px-4 py-2 rounded-lg bg-teal-600 hover:bg-teal-500 text-white text-xs font-semibold transition">
+              Revisit Section &rarr;
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- FIXED BOTTOM CONTROL BAR -->
+  <footer class="h-[56px] w-full bg-navy-900 text-slate-200 border-t border-slate-800 relative flex items-center justify-between px-4 sm:px-6 select-none">
+    <div class="absolute top-0 left-0 right-0 h-[3px] bg-slate-800">
+      <div id="progress-bar" class="h-full bg-teal-500 transition-all duration-300" style="width: 6.67%"></div>
+    </div>
+
+    <div class="flex items-center gap-3 min-w-0">
+      <span class="font-bold text-xs sm:text-sm text-white tracking-tight truncate">AI Engineering &bull; Study Notes</span>
+      <span class="hidden lg:inline text-[11px] text-slate-400 border-l border-slate-700 pl-3">
+        Use &larr; &rarr; Arrow Keys or Space to navigate &nbsp;|&nbsp; Press <kbd class="px-1 py-0.5 rounded bg-slate-800 text-slate-200 font-mono">G</kbd> for Overview &nbsp;|&nbsp; <kbd class="px-1 py-0.5 rounded bg-slate-800 text-slate-200 font-mono">F</kbd> for Fullscreen
+      </span>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <button type="button" id="prev-btn" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-semibold text-slate-100 border border-slate-700 transition">
+        &larr; Prev
+      </button>
+
+      <button type="button" id="slide-counter-btn" title="Open section overview (G)" class="px-3 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-xs font-mono font-semibold text-teal-300 border border-slate-700 transition">
+        1 / 15
+      </button>
+
+      <button type="button" id="next-btn" class="px-3.5 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-500 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-semibold text-white shadow transition">
+        Next &rarr;
+      </button>
+
+      <button type="button" id="fullscreen-btn" title="Toggle Fullscreen (F)" aria-label="Toggle Fullscreen" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+        </svg>
+      </button>
+    </div>
+  </footer>
+
+  <!-- SECTION OVERVIEW MODAL -->
+  <div id="overview-modal" class="hidden fixed inset-0 z-50 bg-slate-950/75 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[85vh] flex flex-col overflow-hidden">
+      <div class="px-5 py-4 bg-navy-900 text-white flex items-center justify-between">
+        <div>
+          <h3 class="text-base font-bold">Section Overview</h3>
+          <p class="text-xs text-slate-400">Jump directly to any topic across the 5 modules</p>
+        </div>
+        <button type="button" id="close-modal-btn" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200">Close (Esc)</button>
+      </div>
+      <div id="overview-grid" class="p-5 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3"></div>
+    </div>
+  </div>
+
+  <!-- APPLICATION SCRIPT -->
+  <script>
+    (function () {
+      const slides = Array.from(document.querySelectorAll('.slide'));
+      const totalSlides = slides.length;
+      let currentSlide = 1;
+
+      const prevBtn = document.getElementById('prev-btn');
+      const nextBtn = document.getElementById('next-btn');
+      const counterBtn = document.getElementById('slide-counter-btn');
+      const progressBar = document.getElementById('progress-bar');
+      const fullscreenBtn = document.getElementById('fullscreen-btn');
+      const overviewModal = document.getElementById('overview-modal');
+      const overviewGrid = document.getElementById('overview-grid');
+      const closeModalBtn = document.getElementById('close-modal-btn');
+      const coverGridBtn = document.getElementById('cover-grid-btn');
+
+      // =====================================================
+      // 1. DECK NAVIGATION & HASH ROUTING
+      // =====================================================
+      function goToSlide(num, updateHash = true) {
+        const target = Math.max(1, Math.min(totalSlides, Number(num) || 1));
+        currentSlide = target;
+        slides.forEach((s, idx) => {
+          s.classList.toggle('active', idx + 1 === currentSlide);
+          if (idx + 1 === currentSlide) s.scrollTop = 0;
+        });
+        counterBtn.textContent = `${currentSlide} / ${totalSlides}`;
+        progressBar.style.width = `${(currentSlide / totalSlides) * 100}%`;
+        prevBtn.disabled = currentSlide === 1;
+        nextBtn.disabled = currentSlide === totalSlides;
+        if (updateHash) {
+          try { history.replaceState(null, '', `#slide-${currentSlide}`); } catch (e) {}
+        }
+        renderOverviewGrid();
+      }
+
+      function readHash() {
+        const match = (window.location.hash || '').match(/^#slide-(\d+)$/);
+        if (match) goToSlide(parseInt(match[1], 10), false);
+        else goToSlide(1, false);
+      }
+
+      prevBtn.addEventListener('click', () => goToSlide(currentSlide - 1));
+      nextBtn.addEventListener('click', () => goToSlide(currentSlide + 1));
+
+      document.querySelectorAll('.nav-jump').forEach(btn => {
+        btn.addEventListener('click', () => goToSlide(btn.getAttribute('data-goto')));
+      });
+
+      function openOverview() {
+        renderOverviewGrid();
+        overviewModal.classList.remove('hidden');
+      }
+      function closeOverview() {
+        overviewModal.classList.add('hidden');
+      }
+
+      counterBtn.addEventListener('click', openOverview);
+      if (coverGridBtn) coverGridBtn.addEventListener('click', openOverview);
+      closeModalBtn.addEventListener('click', closeOverview);
+      overviewModal.addEventListener('click', (e) => {
+        if (e.target === overviewModal) closeOverview();
+      });
+
+      function renderOverviewGrid() {
+        overviewGrid.innerHTML = '';
+        slides.forEach((s, idx) => {
+          const n = idx + 1;
+          const isCur = n === currentSlide;
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = `text-left p-3 rounded-xl border transition ${
+            isCur
+              ? 'border-teal-500 bg-teal-50 ring-2 ring-teal-500/20'
+              : 'border-slate-200 bg-slate-50 hover:border-teal-400 hover:bg-white'
+          }`;
+          btn.innerHTML = `
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-teal-700">${s.dataset.module || ''}</span>
+              <span class="text-[11px] font-mono font-bold ${isCur ? 'text-teal-700' : 'text-slate-400'}">${n} / ${totalSlides}</span>
+            </div>
+            <div class="text-xs font-bold text-navy-900 leading-snug">${s.dataset.title || ''}</div>
+          `;
+          btn.addEventListener('click', () => {
+            goToSlide(n);
+            closeOverview();
+          });
+          overviewGrid.appendChild(btn);
+        });
+      }
+
+      function toggleFullscreen() {
+        try {
+          if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen();
+          } else {
+            document.exitFullscreen();
+          }
+        } catch (e) {}
+      }
+      fullscreenBtn.addEventListener('click', toggleFullscreen);
+
+      window.addEventListener('hashchange', readHash);
+      document.addEventListener('keydown', (e) => {
+        const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
+        if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+        if (e.key === 'Escape') { closeOverview(); return; }
+        if (!overviewModal.classList.contains('hidden')) return;
+        if (e.key === 'ArrowRight' || e.key === ' ') {
+          e.preventDefault();
+          goToSlide(currentSlide + 1);
+        } else if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          goToSlide(currentSlide - 1);
+        } else if (e.key.toLowerCase() === 'g') {
+          openOverview();
+        } else if (e.key.toLowerCase() === 'f') {
+          toggleFullscreen();
+        }
+      });
+
+      // =====================================================
+      // 2. SLIDE 2: KNOWLEDGE CUT-OFF EXPLORER
+      // =====================================================
+      const cutoffScenarios = [
+        {
+          date: 'Event Date: June 2017',
+          pinLeft: '18%',
+          inside: true,
+          prompt: 'Query: "What architecture did the 2017 \'Attention Is All You Need\' paper introduce?"',
+          response: 'Accurate Response: The model reliably explains the Transformer architecture, self-attention mechanism, and encoder-decoder structure because this knowledge is firmly embedded in its pre-training weights.'
+        },
+        {
+          date: 'Event Date: Nov 2023',
+          pinLeft: '48%',
+          inside: true,
+          prompt: 'Query: "Summarize the key principles of the 2023 WHO guidance on AI ethics in healthcare."',
+          response: 'Accurate Response: Because November 2023 precedes the March 2024 cut-off, the frozen model recalls the core ethical principles (autonomy, safety, transparency, accountability, and equity).'
+        },
+        {
+          date: 'Event Date: Oct 2025',
+          pinLeft: '78%',
+          inside: false,
+          prompt: 'Query: "What are the contraindications of a newly approved October 2025 oncology drug?"',
+          response: 'Cut-Off Failure: This event occurred after the March 2024 cut-off. A standalone frozen LLM either refuses to answer or—worse—hallucinates plausible-sounding but fabricated dosing and safety details. Solution: Use RAG.'
+        },
+        {
+          date: 'Event Date: Live Today',
+          pinLeft: '93%',
+          inside: false,
+          prompt: 'Query: "What is Patient #4082\'s serum creatinine level from this morning\'s blood draw?"',
+          response: 'Private & Live Data Failure: Frozen weights never contain private or real-time operational data. Answering requires live external retrieval via Tool Calling or an MCP Server.'
+        }
+      ];
+
+      function renderCutoff(idx) {
+        const sc = cutoffScenarios[idx];
+        const dateBadge = document.getElementById('cutoff-date-badge');
+        const statusBadge = document.getElementById('cutoff-status-badge');
+        const box = document.getElementById('cutoff-output-box');
+        const pin = document.getElementById('cutoff-pin');
+        document.getElementById('cutoff-prompt-text').textContent = sc.prompt;
+        document.getElementById('cutoff-response-text').textContent = sc.response;
+        dateBadge.textContent = sc.date;
+        pin.style.left = sc.pinLeft;
+        if (sc.inside) {
+          dateBadge.className = 'font-mono font-semibold px-2 py-0.5 rounded bg-teal-100 text-teal-800';
+          statusBadge.textContent = 'Inside Training Window';
+          statusBadge.className = 'font-semibold text-teal-700';
+          box.className = 'md:col-span-7 rounded-lg border border-teal-200 bg-teal-50/50 p-3.5 text-sm';
+        } else {
+          dateBadge.className = 'font-mono font-semibold px-2 py-0.5 rounded bg-red-100 text-red-800';
+          statusBadge.textContent = 'Beyond Cut-Off / External';
+          statusBadge.className = 'font-semibold text-red-700';
+          box.className = 'md:col-span-7 rounded-lg border border-red-200 bg-red-50/70 p-3.5 text-sm';
+        }
+      }
+
+      document.querySelectorAll('#cutoff-buttons button').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('#cutoff-buttons button').forEach(b => {
+            b.classList.remove('active-tab');
+            b.classList.add('bg-slate-50', 'text-slate-700');
+          });
+          btn.classList.add('active-tab');
+          btn.classList.remove('bg-slate-50', 'text-slate-700');
+          renderCutoff(Number(btn.dataset.cutoff));
+        });
+      });
+
+      // =====================================================
+      // 3. SLIDE 3: OPEN-WEIGHT VS PROPRIETARY MATRIX
+      // =====================================================
+      const modelRows = [
+        { key: 'accessibility', label: 'Accessibility', open: 'Weights are publicly downloadable; can run offline on laptops, institutional servers, or private clouds.', prop: 'Accessible only via vendor-hosted cloud APIs or web portals; requires internet and vendor accounts.' },
+        { key: 'usage', label: 'Usage', open: 'Ideal for privacy-sensitive workflows, research inspection, and self-hosted enterprise pipelines.', prop: 'Ideal for fast prototyping and tasks needing frontier-level reasoning with zero infrastructure setup.' },
+        { key: 'customisation', label: 'Customisation', open: 'Full control: supports domain fine-tuning (LoRA/full), quantization, and custom safety layers.', prop: 'Limited primarily to prompt engineering, system instructions, RAG, and vendor-managed fine-tuning APIs.' },
+        { key: 'cost', label: 'Cost', open: 'Free model weights ($0 per token), but requires upfront GPU/RAM hardware and hosting maintenance.', prop: 'Zero hardware investment; recurring pay-per-token API charges or subscription fees that scale with volume.' }
+      ];
+
+      function renderModelCmp(filterKey) {
+        const tbody = document.getElementById('model-cmp-tbody');
+        tbody.innerHTML = '';
+        modelRows
+          .filter(r => filterKey === 'all' || r.key === filterKey)
+          .forEach(r => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td class="py-2.5 pr-3 font-bold text-navy-900 align-top">${r.label}</td>
+              <td class="py-2.5 px-3 align-top">${r.open}</td>
+              <td class="py-2.5 pl-3 align-top">${r.prop}</td>
+            `;
+            tbody.appendChild(tr);
+          });
+      }
+
+      document.querySelectorAll('#model-cmp-tabs button').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('#model-cmp-tabs button').forEach(b => {
+            b.classList.remove('active-tab');
+            b.classList.add('bg-slate-50', 'text-slate-700');
+          });
+          btn.classList.add('active-tab');
+          btn.classList.remove('bg-slate-50', 'text-slate-700');
+          renderModelCmp(btn.dataset.dim);
+        });
+      });
+
+      // =====================================================
+      // 4. SLIDE 4: LIVE TOKENISER & PROMPT STEERING
+      // =====================================================
+      const tokenColors = [
+        'bg-teal-100 text-teal-900 border-teal-200',
+        'bg-blue-100 text-blue-900 border-blue-200',
+        'bg-indigo-100 text-indigo-900 border-indigo-200',
+        'bg-amber-100 text-amber-900 border-amber-200',
+        'bg-rose-100 text-rose-900 border-rose-200'
+      ];
+
+      function pseudoTokenise(text) {
+        if (!text) return [];
+        const rawParts = text.match(/(\s+|[A-Za-z]+|\d+|[^\sA-Za-z\d])/g) || [];
+        const tokens = [];
+        const suffixes = /(tion|sion|graphy|ology|ical|ing|ed|es|er|ly|al|ic)$/i;
+        rawParts.forEach(part => {
+          if (/^\s+$/.test(part)) return;
+          if (/^[A-Za-z]{8,}$/.test(part)) {
+            const m = part.match(suffixes);
+            if (m && part.length - m[0].length >= 3) {
+              const stem = part.slice(0, part.length - m[0].length);
+              if (stem.length >= 7) {
+                const mid = Math.ceil(stem.length / 2);
+                tokens.push(stem.slice(0, mid), stem.slice(mid), m[0]);
+              } else {
+                tokens.push(stem, m[0]);
+              }
+            } else {
+              const mid = Math.ceil(part.length / 2);
+              tokens.push(part.slice(0, mid), part.slice(mid));
+            }
+          } else {
+            tokens.push(part);
+          }
+        });
+        return tokens;
+      }
+
+      function hashTokenId(tok) {
+        let h = 2166136261;
+        for (let i = 0; i < tok.length; i++) {
+          h ^= tok.charCodeAt(i);
+          h = Math.imul(h, 16777619);
+        }
+        return (Math.abs(h) % 49000) + 1000;
+      }
+
+      const tokenInput = document.getElementById('token-input');
+      function updateTokeniser() {
+        const text = tokenInput.value || '';
+        const toks = pseudoTokenise(text);
+        const out = document.getElementById('token-output');
+        out.innerHTML = '';
+        toks.forEach((t, i) => {
+          const span = document.createElement('span');
+          span.className = `token-chip ${tokenColors[i % tokenColors.length]}`;
+          span.innerHTML = `<span class="font-semibold">${t.replace(/</g, '&lt;')}</span><span class="text-[10px] opacity-70 mt-0.5">#${hashTokenId(t)}</span>`;
+          out.appendChild(span);
+        });
+        document.getElementById('tok-char-count').textContent = text.length;
+        document.getElementById('tok-count').textContent = toks.length;
+        document.getElementById('tok-ratio').textContent = toks.length ? (text.length / toks.length).toFixed(1) : '0.0';
+      }
+
+      tokenInput.addEventListener('input', updateTokeniser);
+      document.querySelectorAll('.tok-preset').forEach(btn => {
+        btn.addEventListener('click', () => {
+          tokenInput.value = btn.dataset.text;
+          updateTokeniser();
+        });
+      });
+
+      const promptDemos = {
+        vague: {
+          input: 'Explain hypertension.',
+          output: 'Produces a long, generic encyclopedia-style essay—unpredictable length, mixed technical jargon, and no clear target audience.'
+        },
+        role: {
+          input: 'Act as a primary-care educator. Explain hypertension to a newly diagnosed adult in 3 plain-language bullet points.',
+          output: 'Produces a warm, jargon-free 3-bullet summary focusing on what high blood pressure means, why monitoring matters, and everyday lifestyle steps.'
+        },
+        structured: {
+          input: 'Extract condition, systolic_mmHg, and follow_up_days from the note and return valid JSON only.',
+          output: '{ "condition": "Stage 1 Hypertension", "systolic_mmHg": 136, "follow_up_days": 30 } — Clean machine-readable output ready for downstream software.'
+        }
+      };
+
+      function renderPromptDemo(key) {
+        document.getElementById('prompt-demo-in').textContent = promptDemos[key].input;
+        document.getElementById('prompt-demo-out').textContent = promptDemos[key].output;
+      }
+
+      document.querySelectorAll('#prompt-tabs button').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('#prompt-tabs button').forEach(b => {
+            b.classList.remove('active-tab');
+            b.classList.add('bg-slate-50', 'text-slate-700');
+          });
+          btn.classList.add('active-tab');
+          btn.classList.remove('bg-slate-50', 'text-slate-700');
+          renderPromptDemo(btn.dataset.prompt);
+        });
+      });
+
+      // =====================================================
+      // 5. SLIDE 5: 5-STAGE INFERENCING PIPELINE + TEMPERATURE
+      // =====================================================
+      const infStages = [
+        {
+          title: '1. Prompt Input',
+          desc: 'The user or application sends a structured text prompt containing system instructions, context, and the current query.',
+          visual: 'Prompt String:\n"Elevated blood glucose indicates"',
+          note: 'Clear, well-scoped prompts narrow the search space before any neural computation starts.'
+        },
+        {
+          title: '2. Tokenisation',
+          desc: 'A subword tokeniser (e.g., BPE) splits the raw prompt string into discrete tokens and converts each token into its vocabulary integer ID.',
+          visual: 'Tokens:    ["Elevated", " blood", " glucose", " indicates"]\nToken IDs: [ 38412,       6621,      29405,      14820 ]',
+          note: 'Neural networks cannot read strings directly; tokenisation creates a compact numerical sequence.'
+        },
+        {
+          title: '3. Embeddings & Positional Encoding',
+          desc: 'Each integer ID looks up a dense vector in the embedding matrix. Positional encoding is added so the Transformer knows token order.',
+          visual: 'ID 29405 (" glucose") -> [ 0.24, -0.81, 0.53, ..., 0.19 ]  (4,096 dimensions)\nID 6621  (" blood")   -> [ 0.18, -0.67, 0.41, ..., 0.08 ]  (4,096 dimensions)',
+          note: 'Embeddings place semantically related concepts close together in continuous vector space.'
+        },
+        {
+          title: '4. Transformer Forward Pass',
+          desc: 'Vectors pass through stacked Transformer layers. Self-attention weighs how each token relates to every other token, outputting raw scores (logits) across the entire vocabulary.',
+          visual: 'Self-Attention("indicates") attends strongly to -> "Elevated" (0.41), "glucose" (0.47)\nOutput Logits -> { "hyperglycemia": 4.2, "diabetes": 3.5, "insulin": 2.1, "stress": 1.4 }',
+          note: 'All model parameters remain frozen during this forward pass.'
+        },
+        {
+          title: '5. Next-Token Generation (Autoregressive Loop)',
+          desc: 'Softmax converts logits into probabilities (shaped by Temperature). One token is sampled, appended to the prompt, and the cycle repeats until an end-of-sequence token is emitted.',
+          visual: 'Sampled Next Token: " hyperglycemia"\nNew Sequence: "Elevated blood glucose indicates hyperglycemia" -> Repeat Stages 3-5',
+          note: 'An entire paragraph is generated one token at a time through this repeated autoregressive loop.'
+        }
+      ];
+
+      let currentInfStage = 0;
+      function renderInfStage(idx) {
+        currentInfStage = Math.max(0, Math.min(infStages.length - 1, idx));
+        const st = infStages[currentInfStage];
+        document.getElementById('inf-stage-badge').textContent = `Stage ${currentInfStage + 1} of 5`;
+        document.getElementById('inf-stage-title').textContent = st.title;
+        document.getElementById('inf-stage-desc').textContent = st.desc;
+        document.getElementById('inf-stage-visual').textContent = st.visual;
+        document.getElementById('inf-stage-note').textContent = st.note;
+        document.querySelectorAll('#inf-pipeline-nodes button').forEach((b, i) => {
+          b.classList.toggle('active-node', i === currentInfStage);
+        });
+      }
+
+      document.querySelectorAll('#inf-pipeline-nodes button').forEach(btn => {
+        btn.addEventListener('click', () => renderInfStage(Number(btn.dataset.stage)));
+      });
+      document.getElementById('inf-prev-btn').addEventListener('click', () => renderInfStage(currentInfStage - 1));
+      document.getElementById('inf-next-btn').addEventListener('click', () => renderInfStage((currentInfStage + 1) % infStages.length));
+
+      const baseLogits = [
+        { token: '" hyperglycemia"', logit: 4.2 },
+        { token: '" diabetes"', logit: 3.5 },
+        { token: '" impaired"', logit: 2.3 },
+        { token: '" metabolic"', logit: 1.7 },
+        { token: '" stress"', logit: 1.1 }
+      ];
+
+      const tempSlider = document.getElementById('temp-slider');
+      function updateTempChart() {
+        const T = parseFloat(tempSlider.value) || 0.7;
+        document.getElementById('temp-val').textContent = T.toFixed(1);
+        const exps = baseLogits.map(x => Math.exp(x.logit / T));
+        const sum = exps.reduce((a, b) => a + b, 0);
+        const container = document.getElementById('prob-bars');
+        container.innerHTML = '';
+        baseLogits.forEach((item, i) => {
+          const pct = (exps[i] / sum) * 100;
+          const row = document.createElement('div');
+          row.innerHTML = `
+            <div class="flex justify-between text-xs mb-0.5">
+              <span class="font-mono font-semibold text-navy-900">${item.token}</span>
+              <span class="font-mono text-slate-600">${pct.toFixed(1)}%</span>
+            </div>
+            <div class="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
+              <div class="h-full rounded-full transition-all duration-200 ${i === 0 ? 'bg-teal-600' : 'bg-blue-500/80'}" style="width: ${pct.toFixed(1)}%"></div>
+            </div>
+          `;
+          container.appendChild(row);
+        });
+      }
+      tempSlider.addEventListener('input', updateTempChart);
+
+      // =====================================================
+      // 6. SLIDE 6: DEPLOYMENT ADVISOR
+      // =====================================================
+      const advState = { privacy: 'high', hardware: 'strong', scale: 'standard' };
+      function updateAdvisor() {
+        const res = document.getElementById('adv-result');
+        if (advState.privacy === 'high' && advState.hardware === 'strong' && advState.scale === 'standard') {
+          res.className = 'mt-4 p-3.5 rounded-lg bg-teal-50 border border-teal-200 text-xs leading-relaxed text-teal-950';
+          res.innerHTML = '<div class="font-bold text-teal-800 mb-1">Recommended: Local Inferencing (e.g., Ollama)</div>Strong local hardware and strict privacy make on-premise open-weight models ideal—zero external data transfer and $0 per-token fees.';
+        } else if (advState.privacy === 'high' && (advState.hardware === 'basic' || advState.scale === 'frontier')) {
+          res.className = 'mt-4 p-3.5 rounded-lg bg-indigo-50 border border-indigo-200 text-xs leading-relaxed text-indigo-950';
+          res.innerHTML = '<div class="font-bold text-indigo-800 mb-1">Recommended: Private Cloud / Enterprise BAA or Hybrid</div>Strict privacy rules out unvetted public APIs, while thin hardware or frontier complexity exceeds a basic laptop. Use a compliant private cloud or de-identify locally first.';
+        } else {
+          res.className = 'mt-4 p-3.5 rounded-lg bg-blue-50 border border-blue-200 text-xs leading-relaxed text-blue-950';
+          res.innerHTML = '<div class="font-bold text-blue-800 mb-1">Recommended: Cloud Inferencing (e.g., OpenRouter)</div>Non-sensitive data lets you leverage frontier cloud models instantly with no local GPU maintenance and flexible pay-as-you-go scaling.';
+        }
+      }
+
+      function bindAdvisorGroup(id, key) {
+        const group = document.getElementById(id);
+        group.querySelectorAll('button').forEach(btn => {
+          btn.addEventListener('click', () => {
+            group.querySelectorAll('button').forEach(b => {
+              b.classList.remove('active-tab');
+              b.classList.add('bg-slate-50', 'text-slate-700');
+            });
+            btn.classList.add('active-tab');
+            btn.classList.remove('bg-slate-50', 'text-slate-700');
+            advState[key] = btn.dataset.val;
+            updateAdvisor();
+          });
+        });
+      }
+      bindAdvisorGroup('adv-privacy', 'privacy');
+      bindAdvisorGroup('adv-hardware', 'hardware');
+      bindAdvisorGroup('adv-scale', 'scale');
+
+      // =====================================================
+      // 7. SLIDE 7: OLLAMA CLI SIMULATOR
+      // =====================================================
+      const ollamaOutputs = {
+        pull: `$ ollama pull llama3.2\npulling manifest\npulling dde5aa3fc5ff... 100% [████████████████] 2.0 GB\nverifying sha256 digest\nwriting manifest\nsuccess  # Model weights saved locally for offline use`,
+        run: `$ ollama run llama3.2\n>>> Summarize why frozen LLMs need RAG in one sentence.\n\nRAG supplies fresh, external documents at query time so a frozen LLM can answer accurately without retraining its weights.\n>>> /bye`,
+        list: `$ ollama list\nNAME                ID              SIZE      MODIFIED\nllama3.2:latest     a80c4f17acd5    2.0 GB    2 days ago\nmistral:7b          f974a74358d6    4.1 GB    1 week ago\nnomic-embed-text    0a109f422b47    274 MB    1 week ago`,
+        api: `$ curl http://localhost:11434/api/generate -d '{\n  "model": "llama3.2",\n  "prompt": "Define tokenisation briefly.",\n  "stream": false\n}'\n# Response returned from local machine — zero internet traffic`
+      };
+
+      function renderOllama(cmd) {
+        document.getElementById('ollama-terminal').textContent = ollamaOutputs[cmd];
+      }
+      document.querySelectorAll('#ollama-tabs button').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('#ollama-tabs button').forEach(b => {
+            b.classList.remove('active-tab');
+            b.classList.add('bg-slate-50', 'text-slate-700');
+          });
+          btn.classList.add('active-tab');
+          btn.classList.remove('bg-slate-50', 'text-slate-700');
+          renderOllama(btn.dataset.cmd);
+        });
+      });
+
+      // =====================================================
+      // 8. SLIDE 8: RAG ARCHITECTURE INSPECTOR
+      // =====================================================
+      const ragNodes = {
+        docs: { title: '1. Source Documents (Knowledge Base)', desc: 'Raw domain files—such as clinical protocols, hospital SOPs, PDFs, or textbooks—are collected and cleaned into plain text.' },
+        chunk: { title: '2. Text Chunking', desc: 'Large documents are split into manageable, overlapping segments (e.g., 300–500 tokens each) so retrieval pinpoints exact paragraphs rather than whole manuals.' },
+        embed: { title: '3. Embedding Model', desc: 'Each text chunk is passed through an embedding model (e.g., nomic-embed-text) to generate a dense numerical vector capturing its semantic meaning.' },
+        vdb: { title: '4. Vector Database', desc: 'Vectors are stored alongside their raw text chunks and metadata (source title, page number, date) in an indexed database optimized for fast similarity search.' },
+        query: { title: '5. User Query Embedding', desc: 'At runtime, the user\'s question is converted into a query vector using the exact same embedding model used during indexing.' },
+        search: { title: '6. Semantic Similarity Search', desc: 'The vector database compares the query vector against stored vectors (e.g., via Cosine Similarity) and returns the Top-K most relevant chunks.' },
+        augment: { title: '7. Prompt Augmentation', desc: 'The retrieved chunks are inserted directly into the LLM prompt template alongside the original question and an instruction to answer strictly from the provided context.' },
+        generate: { title: '8. Grounded Response Generation', desc: 'The LLM synthesizes a clear, natural-language answer grounded in the retrieved passages—often including inline document citations.' }
+      };
+
+      function renderRagNode(key) {
+        document.getElementById('rag-detail-title').textContent = ragNodes[key].title;
+        document.getElementById('rag-detail-desc').textContent = ragNodes[key].desc;
+        document.querySelectorAll('#slide-8 [data-rag]').forEach(b => {
+          b.classList.toggle('active-node', b.dataset.rag === key);
+        });
+      }
+      document.querySelectorAll('#slide-8 [data-rag]').forEach(btn => {
+        btn.addEventListener('click', () => renderRagNode(btn.dataset.rag));
+      });
+
+      // =====================================================
+      // 9. SLIDE 9: VECTOR SIMILARITY & TOP-K LAB
+      // =====================================================
+      const vectorCorpus = [
+        { id: 'C1', source: 'Cardiology Protocol §2.1', text: 'Acute myocardial infarction presents with substernal chest pain, diaphoresis, and ST-segment elevation.', x: 75, y: 58 },
+        { id: 'C2', source: 'Emergency Triage Guide', text: 'Immediate 12-lead ECG within 10 minutes is mandatory for suspected coronary ischemia.', x: 112, y: 78 },
+        { id: 'C3', source: 'Endocrinology Formulary', text: 'Metformin is contraindicated when estimated GFR falls below 30 mL/min/1.73m² due to lactic acidosis risk.', x: 245, y: 65 },
+        { id: 'C4', source: 'Renal Dosing Handbook', text: 'Monitor serum creatinine annually and reduce oral hypoglycemic dosage in moderate renal impairment.', x: 222, y: 98 },
+        { id: 'C5', source: 'IT Security SOP v4', text: 'Encrypted off-site EHR database snapshots must run nightly at 02:00 with quarterly restoration drills.', x: 160, y: 172 }
+      ];
+
+      const vectorQueries = [
+        { label: 'Heart attack emergency signs', x: 88, y: 64, scores: [0.94, 0.87, 0.24, 0.21, 0.11] },
+        { label: 'Metformin renal dosing limit', x: 238, y: 76, scores: [0.22, 0.19, 0.95, 0.86, 0.14] },
+        { label: 'Hospital data backup policy', x: 162, y: 162, scores: [0.12, 0.15, 0.18, 0.16, 0.96] }
+      ];
+
+      let activeQueryIdx = 0;
+      const topkSelect = document.getElementById('topk-select');
+
+      function renderVectorLab() {
+        const q = vectorQueries[activeQueryIdx];
+        const k = parseInt(topkSelect.value, 10) || 2;
+        const ranked = vectorCorpus.map((c, i) => ({ ...c, score: q.scores[i] }))
+                                   .sort((a, b) => b.score - a.score);
+        const topIds = new Set(ranked.slice(0, k).map(r => r.id));
+
+        const svg = document.getElementById('vector-svg');
+        let html = `
+          <defs>
+            <pattern id="grid-pat" width="32" height="32" patternUnits="userSpaceOnUse">
+              <path d="M 32 0 L 0 0 0 32" fill="none" stroke="#E2E8F0" stroke-width="1"/>
+            </pattern>
+          </defs>
+          <rect width="320" height="210" fill="url(#grid-pat)" rx="6"/>
+        `;
+        ranked.slice(0, k).forEach(item => {
+          html += `<line x1="${q.x}" y1="${q.y}" x2="${item.x}" y2="${item.y}" stroke="#0D9488" stroke-width="2" stroke-dasharray="4 3"/>`;
+        });
+        vectorCorpus.forEach(c => {
+          const isTop = topIds.has(c.id);
+          html += `
+            <circle cx="${c.x}" cy="${c.y}" r="${isTop ? 9 : 6}" fill="${isTop ? '#0D9488' : '#94A3B8'}" stroke="#FFFFFF" stroke-width="2"/>
+            <text x="${c.x}" y="${c.y - 12}" text-anchor="middle" font-size="10" font-weight="700" fill="${isTop ? '#0F766E' : '#475569'}">${c.id}</text>
+          `;
+        });
+        html += `
+          <circle cx="${q.x}" cy="${q.y}" r="11" fill="rgba(37, 99, 235, 0.18)"/>
+          <circle cx="${q.x}" cy="${q.y}" r="6" fill="#2563EB" stroke="#FFFFFF" stroke-width="2"/>
+          <text x="${q.x}" y="${q.y + 18}" text-anchor="middle" font-size="10" font-weight="800" fill="#1D4ED8">QUERY</text>
+        `;
+        svg.innerHTML = html;
+
+        const list = document.getElementById('vector-chunks-list');
+        list.innerHTML = '';
+        ranked.forEach((item, idx) => {
+          const selected = idx < k;
+          const div = document.createElement('div');
+          div.className = `p-2.5 rounded-lg border text-xs transition ${
+            selected ? 'bg-teal-50 border-teal-300 shadow-xs' : 'bg-slate-50 border-slate-200 opacity-75'
+          }`;
+          div.innerHTML = `
+            <div class="flex items-center justify-between gap-2 mb-1">
+              <div class="flex items-center gap-1.5">
+                <span class="font-mono font-bold px-1.5 py-0.5 rounded ${selected ? 'bg-teal-600 text-white' : 'bg-slate-200 text-slate-700'}">${item.id}</span>
+                <span class="font-bold text-navy-900">${item.source}</span>
+                ${selected ? '<span class="text-[10px] font-bold uppercase text-teal-700 bg-teal-100 px-1.5 py-0.5 rounded">Retrieved</span>' : ''}
+              </div>
+              <span class="font-mono font-bold ${selected ? 'text-teal-700' : 'text-slate-500'}">cos = ${item.score.toFixed(2)}</span>
+            </div>
+            <p class="text-slate-700 leading-snug">${item.text}</p>
+          `;
+          list.appendChild(div);
+        });
+      }
+
+      document.querySelectorAll('#rag-query-tabs button').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('#rag-query-tabs button').forEach(b => {
+            b.classList.remove('active-tab');
+            b.classList.add('bg-slate-50', 'text-slate-700');
+          });
+          btn.classList.add('active-tab');
+          btn.classList.remove('bg-slate-50', 'text-slate-700');
+          activeQueryIdx = Number(btn.dataset.q);
+          renderVectorLab();
+        });
+      });
+      topkSelect.addEventListener('change', renderVectorLab);
+
+      // =====================================================
+      // 10. SLIDE 10: STANDARD LLM VS RAG COMPARATOR
+      // =====================================================
+      const ragComparisons = [
+        {
+          query: 'What is our hospital\'s updated 2026 first-line antibiotic bundle timing for suspected sepsis?',
+          std: 'Typically, broad-spectrum antibiotics should be administered within 1 to 3 hours of sepsis recognition, depending on severity and local guidelines.',
+          stdRisk: 'Limitation: Generic textbook answer—misses the hospital\'s specific 2026 escalation rule and provides no verifiable policy citation.',
+          chunk: '[Hospital Sepsis SOP 2026, §4.2] "For septic shock or lactate > 4 mmol/L, initiate IV broad-spectrum antimicrobials within 45 minutes and obtain two blood culture sets prior to first dose."',
+          rag: 'Per Hospital Sepsis SOP 2026 (§4.2), for suspected septic shock or lactate > 4 mmol/L, IV broad-spectrum antimicrobials must be started within 45 minutes, after drawing two sets of blood cultures.',
+          ragBenefit: 'Advantage: Exact institutional protocol with verifiable section citation.'
+        },
+        {
+          query: 'Is Drug X approved on our clinic\'s 2026 Tier-1 formulary?',
+          std: 'Drug X is commonly prescribed in outpatient settings and is often covered on standard formularies, though coverage varies by institution.',
+          stdRisk: 'Limitation: Cannot know private institutional formulary lists; risks misleading clinicians or wasting time.',
+          chunk: '[Clinic Formulary Jan 2026, p. 14] "Drug X moved from Tier-1 to Tier-2 (Prior Authorization Required) effective Jan 1, 2026. Preferred Tier-1 alternative: Drug Y."',
+          rag: 'No—according to the January 2026 Clinic Formulary (p. 14), Drug X was moved to Tier-2 requiring prior authorization. Drug Y is the preferred Tier-1 alternative.',
+          ragBenefit: 'Advantage: Reflects current private records without retraining the LLM.'
+        },
+        {
+          query: 'Has this patient had any documented contrast-dye reactions in past admissions?',
+          std: 'I do not have access to this patient\'s medical record. Please review their allergy chart before ordering contrast imaging.',
+          stdRisk: 'Limitation: Standalone LLM has zero visibility into longitudinal patient records.',
+          chunk: '[Discharge Summary 2023-08-19] "Allergies/Reactions: Developed urticaria and mild bronchospasm after iodinated IV contrast during CT angiography."',
+          rag: 'Yes. The August 19, 2023 discharge summary documents urticaria and mild bronchospasm following iodinated IV contrast during CT angiography.',
+          ragBenefit: 'Advantage: Surfaces critical patient-safety history in seconds with exact date provenance.'
+        }
+      ];
+
+      function renderRagComparison(idx) {
+        const sc = ragComparisons[idx];
+        document.getElementById('rag-cmp-query').textContent = sc.query;
+        document.getElementById('rag-cmp-std').textContent = sc.std;
+        document.getElementById('rag-cmp-std-risk').textContent = sc.stdRisk;
+        document.getElementById('rag-cmp-chunk').textContent = sc.chunk;
+        document.getElementById('rag-cmp-rag').textContent = sc.rag;
+        document.getElementById('rag-cmp-rag-benefit').textContent = sc.ragBenefit;
+      }
+
+      document.querySelectorAll('#rag-cmp-tabs button').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('#rag-cmp-tabs button').forEach(b => {
+            b.classList.remove('active-tab');
+            b.classList.add('bg-slate-50', 'text-slate-700');
+          });
+          btn.classList.add('active-tab');
+          btn.classList.remove('bg-slate-50', 'text-slate-700');
+          renderRagComparison(Number(btn.dataset.sc));
+        });
+      });
+
+      // =====================================================
+      // 11. SLIDE 11: 6-STEP TOOL CALLING TRACE
+      // =====================================================
+      const tcSteps = [
+        {
+          title: 'Step 1: User Submits a Live-Data Request',
+          desc: 'The user asks a question that requires real-time data the frozen LLM cannot know on its own.',
+          label: 'User Message',
+          code: 'User -> Assistant:\n"Check Patient P-1042\'s latest serum potassium lab result and flag if it is outside normal range."'
+        },
+        {
+          title: 'Step 2: Host Sends Prompt + Available Tool Schemas',
+          desc: 'The AI application attaches JSON schemas describing available functions, parameters, and clear docstrings so the LLM knows what tools exist.',
+          label: 'Tool Definition Sent to LLM',
+          code: '{\n  "name": "get_latest_lab",\n  "description": "Fetch the most recent lab value for a patient by LOINC code.",\n  "parameters": {\n    "patient_id": "string",\n    "loinc_code": "string"\n  }\n}'
+        },
+        {
+          title: 'Step 3: LLM Emits a Structured Tool Call',
+          desc: 'Instead of guessing an answer, the LLM recognizes it needs external data and generates a structured JSON tool call.',
+          label: 'LLM Output (Tool Call Request)',
+          code: '{\n  "tool_call": {\n    "name": "get_latest_lab",\n    "arguments": {\n      "patient_id": "P-1042",\n      "loinc_code": "2823-3"\n    }\n  }\n}'
+        },
+        {
+          title: 'Step 4: Host Application Executes the Tool',
+          desc: 'The host validates permissions and arguments, then runs the actual backend function or API query against the database.',
+          label: 'Host Execution Log',
+          code: '[HOST] Validated schema & RBAC permissions\n[HOST] Executing get_latest_lab(patient_id="P-1042", loinc_code="2823-3")\n[EHR API] HTTP 200 OK (42 ms)'
+        },
+        {
+          title: 'Step 5: Structured Tool Result Returns to LLM',
+          desc: 'The deterministic output from the external system is fed back into the LLM conversation context as a tool response.',
+          label: 'Tool Response Payload',
+          code: '{\n  "test": "Potassium [Moles/volume] in Serum",\n  "value": 5.8,\n  "unit": "mmol/L",\n  "reference_range": "3.5 - 5.1 mmol/L",\n  "collected_at": "2026-11-27T07:15:00Z"\n}'
+        },
+        {
+          title: 'Step 6: LLM Synthesizes Final Grounded Answer',
+          desc: 'Using the verified tool output, the LLM writes a clear, accurate natural-language response for the user.',
+          label: 'Final Assistant Response',
+          code: '"Patient P-1042\'s latest serum potassium (collected today at 07:15 UTC) is 5.8 mmol/L, which is elevated above the normal reference range (3.5–5.1 mmol/L). Please review for hyperkalemia."'
+        }
+      ];
+
+      let currentTcStep = 0;
+      function renderTcStep(idx) {
+        currentTcStep = Math.max(0, Math.min(tcSteps.length - 1, idx));
+        const s = tcSteps[currentTcStep];
+        document.getElementById('tc-step-counter').textContent = `Step ${currentTcStep + 1} / 6`;
+        document.getElementById('tc-title').textContent = s.title;
+        document.getElementById('tc-desc').textContent = s.desc;
+        document.getElementById('tc-code-label').textContent = s.label;
+        document.getElementById('tc-code').textContent = s.code;
+        document.querySelectorAll('#tc-step-pills button').forEach((b, i) => {
+          b.classList.toggle('active-tab', i === currentTcStep);
+          b.classList.toggle('bg-slate-50', i !== currentTcStep);
+          b.classList.toggle('text-slate-700', i !== currentTcStep);
+        });
+      }
+
+      document.querySelectorAll('#tc-step-pills button').forEach(btn => {
+        btn.addEventListener('click', () => renderTcStep(Number(btn.dataset.tc)));
+      });
+      document.getElementById('tc-prev-btn').addEventListener('click', () => renderTcStep(currentTcStep - 1));
+      document.getElementById('tc-next-btn').addEventListener('click', () => renderTcStep((currentTcStep + 1) % tcSteps.length));
+
+      // =====================================================
+      // 12. SLIDE 12: MCP N x M vs N + M (DYNAMIC SLIDERS) & INSPECTOR
+      // =====================================================
+      let mcpMode = 'npm';
+      const mcpNSlider = document.getElementById('mcp-n-slider');
+      const mcpMSlider = document.getElementById('mcp-m-slider');
+      const appNames = ['AI Chat App', 'Clinical IDE', 'Triage Agent', 'Coding Copilot', 'Analytics Bot'];
+      const toolNames = ['EHR / FHIR', 'Drug API', 'Lab Calc', 'SQL Store', 'Scheduler'];
+
+      function renderMcpDiagram() {
+        const N = parseInt(mcpNSlider.value, 10) || 3;
+        const M = parseInt(mcpMSlider.value, 10) || 3;
+        document.getElementById('mcp-n-val').textContent = N;
+        document.getElementById('mcp-m-val').textContent = M;
+
+        const svg = document.getElementById('mcp-svg');
+        const cap = document.getElementById('mcp-mode-caption');
+        const apps = Array.from({ length: N }, (_, i) => ({
+          y: (190 / (N + 1)) * (i + 1),
+          label: appNames[i]
+        }));
+        const tools = Array.from({ length: M }, (_, i) => ({
+          y: (190 / (M + 1)) * (i + 1),
+          label: toolNames[i]
+        }));
+
+        let html = '';
+        if (mcpMode === 'nxm') {
+          apps.forEach(a => {
+            tools.forEach(t => {
+              html += `<line x1="112" y1="${a.y}" x2="308" y2="${t.y}" stroke="#DC2626" stroke-width="1.35" stroke-dasharray="4 3" opacity="0.65"/>`;
+            });
+          });
+          html += `<rect x="160" y="75" width="100" height="40" rx="8" fill="#FEF2F2" stroke="#FCA5A5" stroke-width="1.5"/>
+                   <text x="210" y="93" text-anchor="middle" font-size="11" font-weight="800" fill="#B91C1C">${N * M} Custom</text>
+                   <text x="210" y="107" text-anchor="middle" font-size="9" font-weight="600" fill="#DC2626">Integrations (${N}×${M})</text>`;
+          cap.className = 'mt-2 p-2.5 rounded-lg text-xs font-medium bg-red-50 border border-red-200 text-red-900';
+          cap.innerHTML = `<strong>N &times; M Bottleneck (${N * M} connectors):</strong> Adding 1 new data source requires updating all ${N} AI apps separately.`;
+        } else {
+          apps.forEach(a => {
+            html += `<line x1="112" y1="${a.y}" x2="172" y2="95" stroke="#0D9488" stroke-width="2"/>`;
+          });
+          tools.forEach(t => {
+            html += `<line x1="248" y1="95" x2="308" y2="${t.y}" stroke="#0D9488" stroke-width="2"/>`;
+          });
+          html += `<rect x="172" y="65" width="76" height="60" rx="10" fill="#0F172A" stroke="#14B8A6" stroke-width="2.5"/>
+                   <text x="210" y="92" text-anchor="middle" font-size="12" font-weight="800" fill="#5EEAD4">MCP</text>
+                   <text x="210" y="108" text-anchor="middle" font-size="9" fill="#CBD5E1">${N + M} Adapters</text>`;
+          cap.className = 'mt-2 p-2.5 rounded-lg text-xs font-medium bg-teal-50 border border-teal-200 text-teal-900';
+          cap.innerHTML = `<strong>N + M Standardization (${N + M} adapters vs. ${N * M}):</strong> Build an MCP server once, and all ${N} MCP-compatible hosts can discover and use it automatically.`;
+        }
+
+        const boxH = N >= 5 ? 26 : 30;
+        apps.forEach(a => {
+          html += `<rect x="12" y="${a.y - boxH / 2}" width="100" height="${boxH}" rx="6" fill="#FFFFFF" stroke="#1E293B" stroke-width="1.5"/>
+                   <text x="62" y="${a.y + 4}" text-anchor="middle" font-size="10.5" font-weight="700" fill="#0F172A">${a.label}</text>`;
+        });
+        const tBoxH = M >= 5 ? 26 : 30;
+        tools.forEach(t => {
+          html += `<rect x="308" y="${t.y - tBoxH / 2}" width="100" height="${tBoxH}" rx="6" fill="#FFFFFF" stroke="#2563EB" stroke-width="1.5"/>
+                   <text x="358" y="${t.y + 4}" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1D4ED8">${t.label}</text>`;
+        });
+        svg.innerHTML = html;
+      }
+
+      document.querySelectorAll('#mcp-mode-tabs button').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('#mcp-mode-tabs button').forEach(b => {
+            b.classList.remove('active-tab');
+            b.classList.add('bg-slate-50', 'text-slate-700');
+          });
+          btn.classList.add('active-tab');
+          btn.classList.remove('bg-slate-50', 'text-slate-700');
+          mcpMode = btn.dataset.mode;
+          renderMcpDiagram();
+        });
+      });
+      mcpNSlider.addEventListener('input', renderMcpDiagram);
+      mcpMSlider.addEventListener('input', renderMcpDiagram);
+
+      const mcpComponents = {
+        host: {
+          title: '1. MCP Host (The AI Application)',
+          desc: 'The user-facing application (chat assistant, clinical workspace, or IDE) that runs the LLM, manages user consent, enforces security boundaries, and instantiates one or more MCP Clients.',
+          primitives: 'Role: LLM Orchestration | Permission Gatekeeper | Multi-Server Coordination'
+        },
+        client: {
+          title: '2. MCP Client (Protocol Connector)',
+          desc: 'Lives inside the Host and maintains a dedicated 1:1 stateful session with a single MCP Server. It negotiates capabilities at startup and routes standardized JSON-RPC 2.0 requests.',
+          primitives: 'Transport: stdio (local subprocess) or Streamable HTTP / SSE (remote server)'
+        },
+        server: {
+          title: '3. MCP Server (Standardized Capability Adapter)',
+          desc: 'A lightweight, focused program wrapping a specific external system. It advertises its Tools, Resources, and Prompts in a uniform schema so any MCP Client can use it without custom code.',
+          primitives: 'RPC Methods: initialize, tools/list, tools/call, resources/read, prompts/get'
+        },
+        external: {
+          title: '4. External Tools & Data Sources',
+          desc: 'The actual backend infrastructure behind the MCP Server—such as relational databases, HL7 FHIR / EHR APIs, local document folders, clinical calculators, or enterprise web services.',
+          primitives: 'Benefit: Credentials & API logic stay encapsulated inside the MCP Server'
+        }
+      };
+
+      function renderMcpComp(key) {
+        const c = mcpComponents[key];
+        document.getElementById('mcp-comp-title').textContent = c.title;
+        document.getElementById('mcp-comp-desc').textContent = c.desc;
+        document.getElementById('mcp-comp-primitives').textContent = c.primitives;
+        document.querySelectorAll('#mcp-comp-buttons button').forEach(b => {
+          b.classList.toggle('active-node', b.dataset.comp === key);
+        });
+      }
+      document.querySelectorAll('#mcp-comp-buttons button').forEach(btn => {
+        btn.addEventListener('click', () => renderMcpComp(btn.dataset.comp));
+      });
+
+      // =====================================================
+      // 13. SLIDE 13: 5-ACTOR MCP SEQUENCE DIAGRAM (8 STEPS)
+      // =====================================================
+      const seqActors = [
+        { x: 75,  name: 'User',          sub: 'Clinician / Dev', color: '#1E293B' },
+        { x: 225, name: 'MCP Host',      sub: '& MCP Client',    color: '#0D9488' },
+        { x: 380, name: 'LLM',           sub: 'Local or Cloud',  color: '#2563EB' },
+        { x: 535, name: 'MCP Server',    sub: 'FHIR / Tool Svc', color: '#0F766E' },
+        { x: 685, name: 'External API',  sub: 'Database / EHR',  color: '#4F46E5' }
+      ];
+
+      const seqSteps = [
+        {
+          from: 1, to: 3, y: 66,
+          short: '1. tools/list (Discover)',
+          title: 'Step 1: Capability Discovery (Startup Handshake)',
+          desc: 'When the AI app connects to the MCP Server, the MCP Client calls tools/list (and resources/list) to dynamically discover available functions and their parameter schemas—no hardcoding required.',
+          label: 'JSON-RPC Request (Client -> Server)',
+          code: '{ "jsonrpc": "2.0", "id": 1, "method": "tools/list" }\n// Server replies with schema for get_latest_lab(patient_id, loinc_code)'
+        },
+        {
+          from: 0, to: 1, y: 84,
+          short: '2. User Prompt',
+          title: 'Step 2: User Submits a Question',
+          desc: 'The user asks a natural-language question inside the Host application that requires live external data.',
+          label: 'User Input -> MCP Host',
+          code: '"Check Patient P-1042\'s latest creatinine result and tell me if it is elevated."'
+        },
+        {
+          from: 1, to: 2, y: 102,
+          short: '3. Prompt + Tool Schemas',
+          title: 'Step 3: Host Sends Prompt & Discovered Tool Schemas to LLM',
+          desc: 'The Host forwards the user\'s question alongside the tool definitions previously discovered from the MCP Server.',
+          label: 'Host -> LLM Context',
+          code: 'messages: [user_query]\ntools: [ { name: "get_latest_lab", params: ["patient_id", "loinc_code"] } ]'
+        },
+        {
+          from: 2, to: 1, y: 120,
+          short: '4. LLM Selects Tool Call',
+          title: 'Step 4: LLM Decides to Invoke a Tool',
+          desc: 'Recognizing it lacks live patient data, the LLM returns a structured tool call request instead of guessing.',
+          label: 'LLM -> Host Decision',
+          code: 'tool_call: get_latest_lab({ "patient_id": "P-1042", "loinc_code": "2160-0" })'
+        },
+        {
+          from: 1, to: 3, y: 138,
+          short: '5. tools/call (JSON-RPC)',
+          title: 'Step 5: MCP Client Sends Standardized tools/call to MCP Server',
+          desc: 'After verifying permissions (or user approval), the MCP Client dispatches a standardized JSON-RPC tools/call request to the MCP Server.',
+          label: 'JSON-RPC Request (Client -> Server)',
+          code: '{ "jsonrpc": "2.0", "id": 2, "method": "tools/call",\n  "params": { "name": "get_latest_lab", "arguments": { "patient_id": "P-1042", "loinc_code": "2160-0" } } }'
+        },
+        {
+          from: 3, to: 4, y: 156,
+          short: '6. Query External System',
+          title: 'Step 6: MCP Server Queries the External Database / API',
+          desc: 'The MCP Server translates the request into the backend\'s native protocol (e.g., HL7 FHIR REST or SQL), authenticates securely, and fetches live records.',
+          label: 'MCP Server -> External API',
+          code: 'GET https://ehr.internal/fhir/Observation?patient=P-1042&code=2160-0\nAuthorization: Bearer <server-managed-token>'
+        },
+        {
+          from: 3, to: 1, y: 174,
+          short: '7. Structured MCP Result',
+          title: 'Step 7: MCP Server Returns Verified Result to Client',
+          desc: 'The MCP Server formats the raw backend response into a clean, standardized MCP content block and returns it to the Host.',
+          label: 'JSON-RPC Response (Server -> Client)',
+          code: '{ "jsonrpc": "2.0", "id": 2, "result": { "content": [\n  { "type": "text", "text": "Serum Creatinine: 1.6 mg/dL (Ref: 0.7-1.3 mg/dL)" }\n] } }'
+        },
+        {
+          from: 1, to: 0, y: 192,
+          short: '8. Grounded Final Answer',
+          title: 'Step 8: LLM Synthesizes Final Grounded Answer for User',
+          desc: 'The Host feeds the MCP result back to the LLM, which generates an accurate, verified natural-language response for the user.',
+          label: 'Final Response -> User',
+          code: '"Patient P-1042\'s latest serum creatinine is 1.6 mg/dL, which is mildly elevated above the reference range (0.7–1.3 mg/dL)."'
+        }
+      ];
+
+      let currentSeqStep = 0;
+      function renderSeqStep(idx) {
+        currentSeqStep = Math.max(0, Math.min(seqSteps.length - 1, idx));
+        const svg = document.getElementById('mcp-seq-svg');
+        let html = `
+          <defs>
+            <marker id="arr-teal" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 1 L 10 5 L 0 9 z" fill="#0D9488"/>
+            </marker>
+            <marker id="arr-muted" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+              <path d="M 0 1 L 10 5 L 0 9 z" fill="#94A3B8"/>
+            </marker>
+          </defs>
+        `;
+
+        // Draw actor headers & vertical swimlanes
+        seqActors.forEach(a => {
+          html += `
+            <line x1="${a.x}" y1="46" x2="${a.x}" y2="210" stroke="#CBD5E1" stroke-width="1.5" stroke-dasharray="4 4"/>
+            <rect x="${a.x - 56}" y="8" width="112" height="38" rx="7" fill="${a.color}"/>
+            <text x="${a.x}" y="24" text-anchor="middle" font-size="11" font-weight="700" fill="#FFFFFF">${a.name}</text>
+            <text x="${a.x}" y="38" text-anchor="middle" font-size="9" fill="#CBD5E1">${a.sub}</text>
+          `;
+        });
+
+        // Draw step arrows
+        seqSteps.forEach((st, i) => {
+          const x1 = seqActors[st.from].x;
+          const x2 = seqActors[st.to].x;
+          const isActive = i === currentSeqStep;
+          const isPast = i < currentSeqStep;
+          const color = isActive ? '#0D9488' : (isPast ? '#64748B' : '#CBD5E1');
+          const strokeW = isActive ? 2.6 : 1.4;
+          const marker = isActive ? 'url(#arr-teal)' : 'url(#arr-muted)';
+          const midX = (x1 + x2) / 2;
+
+          if (isActive) {
+            html += `<rect x="10" y="${st.y - 12}" width="740" height="20" rx="4" fill="rgba(20, 184, 166, 0.12)"/>`;
+          }
+          html += `<line x1="${x1}" y1="${st.y}" x2="${x2}" y2="${st.y}" stroke="${color}" stroke-width="${strokeW}" marker-end="${marker}"/>`;
+          html += `<rect x="${midX - 72}" y="${st.y - 10}" width="144" height="16" rx="4" fill="${isActive ? '#0F172A' : '#F8FAFC'}" stroke="${isActive ? '#14B8A6' : '#E2E8F0'}" stroke-width="1"/>`;
+          html += `<text x="${midX}" y="${st.y + 1.5}" text-anchor="middle" font-size="9.5" font-weight="${isActive ? '700' : '500'}" fill="${isActive ? '#5EEAD4' : '#475569'}">${st.short}</text>`;
+        });
+
+        svg.innerHTML = html;
+
+        const active = seqSteps[currentSeqStep];
+        document.getElementById('seq-detail-title').textContent = active.title;
+        document.getElementById('seq-detail-desc').textContent = active.desc;
+        document.getElementById('seq-wire-label').textContent = active.label;
+        document.getElementById('seq-wire-code').textContent = active.code;
+
+        document.querySelectorAll('#seq-step-pills button').forEach((b, i) => {
+          b.classList.toggle('active-tab', i === currentSeqStep);
+          b.classList.toggle('bg-slate-50', i !== currentSeqStep);
+          b.classList.toggle('text-slate-700', i !== currentSeqStep);
+        });
+      }
+
+      document.querySelectorAll('#seq-step-pills button').forEach(btn => {
+        btn.addEventListener('click', () => renderSeqStep(Number(btn.dataset.seq)));
+      });
+      document.getElementById('seq-prev-btn').addEventListener('click', () => renderSeqStep(currentSeqStep - 1));
+      document.getElementById('seq-next-btn').addEventListener('click', () => renderSeqStep((currentSeqStep + 1) % seqSteps.length));
+
+      // =====================================================
+      // 14. SLIDE 14: HEALTHCARE TOOL CALLING & MCP WORKFLOWS
+      // =====================================================
+      const hcWorkflows = [
+        {
+          tag: 'Workflow 1 • Live Clinical Data',
+          title: 'EHR / FHIR Lab & Allergy Retrieval',
+          desc: 'An MCP Server wraps a hospital\'s HL7 FHIR endpoint, exposing read-only tools like get_latest_lab() and get_allergies(). The AI assistant fetches verified patient observations on demand rather than relying on pasted text.',
+          server: 'fhir_mcp_server.py',
+          source: 'Hospital EHR / FHIR API',
+          code: 'Tool Call -> get_latest_lab(patient_id="P-209", loinc="4548-4")\nResult    -> { "test": "HbA1c", "value": 7.6, "unit": "%", "date": "2026-11-18" }'
+        },
+        {
+          tag: 'Workflow 2 • Deterministic Computation',
+          title: 'Verified Clinical Calculators',
+          desc: 'LLMs can make arithmetic errors on multi-step formulas. Tool calling delegates clinical scores (eGFR CKD-EPI, BMI, Wells score, or pediatric mg/kg dosing) to audited Python/API calculators.',
+          server: 'clinical_calc_mcp.py',
+          source: 'Audited Formula Library',
+          code: 'Tool Call -> calculate_egfr(creatinine=1.4, age=62, sex="F")\nResult    -> { "eGFR": 42.1, "unit": "mL/min/1.73m²", "stage": "G3b" }'
+        },
+        {
+          tag: 'Workflow 3 • Medication Safety',
+          title: 'Real-Time Drug-Drug Interaction Checks',
+          desc: 'Before finalizing a medication summary or recommendation, the assistant invokes an external pharmacology MCP server to cross-check active prescriptions against a live interaction database.',
+          server: 'rx_safety_mcp.py',
+          source: 'Verified Pharmacology API',
+          code: 'Tool Call -> check_interactions(drugs=["Warfarin", "Fluconazole"])\nResult    -> { "severity": "MAJOR", "effect": "Increased INR & bleeding risk" }'
+        },
+        {
+          tag: 'Workflow 4 • Operations & Scheduling',
+          title: 'Appointment & Follow-Up Coordination',
+          desc: 'AI assistants check real-time specialist availability via a scheduling MCP server and prepare a draft booking—pausing for staff or patient confirmation before committing any write operation.',
+          server: 'scheduling_mcp.py',
+          source: 'Clinic Booking System',
+          code: 'Tool Call -> find_open_slots(dept="Cardiology", within_days=14)\nResult    -> ["2026-12-03 10:30", "2026-12-05 14:00"]  # Awaits user confirm'
+        }
+      ];
+
+      function renderHcWorkflow(idx) {
+        const w = hcWorkflows[idx];
+        document.getElementById('hc-detail-tag').textContent = w.tag;
+        document.getElementById('hc-detail-title').textContent = w.title;
+        document.getElementById('hc-detail-desc').textContent = w.desc;
+        document.getElementById('hc-detail-server').textContent = w.server;
+        document.getElementById('hc-detail-source').textContent = w.source;
+        document.getElementById('hc-detail-code').textContent = w.code;
+        document.querySelectorAll('#hc-mcp-cards button').forEach((b, i) => {
+          b.classList.toggle('active-node', i === idx);
+        });
+      }
+      document.querySelectorAll('#hc-mcp-cards button').forEach(btn => {
+        btn.addEventListener('click', () => renderHcWorkflow(Number(btn.dataset.hc)));
+      });
+
+      // =====================================================
+      // 15. SLIDE 15: CLOSING SYNTHESIS INTERACTIVE SUMMARY
+      // =====================================================
+      const synthItems = [
+        {
+          title: 'Layer 1: Basics of LLMs — Frozen Parametric Knowledge',
+          body: 'LLMs are Transformer models available as downloadable open-weight models (Llama, Mistral) or cloud proprietary APIs (GPT, Claude, Gemini). Their frozen weights and fixed knowledge cut-offs define why external architectures are essential.',
+          goto: 2
+        },
+        {
+          title: 'Layer 2: LLM Inferencing — Prompt to Next-Token Generation',
+          body: 'Inferencing converts raw prompts into subword token IDs, maps them to semantic embeddings, runs self-attention forward passes, and samples one token at a time autoregressively until completion.',
+          goto: 4
+        },
+        {
+          title: 'Layer 3: Local & Cloud Deployment — Ollama vs. OpenRouter',
+          body: 'Local runtimes like Ollama maximize data privacy and eliminate per-token fees at the cost of local GPU/RAM requirements; cloud gateways like OpenRouter provide unified API access to frontier models across providers.',
+          goto: 6
+        },
+        {
+          title: 'Layer 4: RAG — Grounded Retrieval via Vector Databases',
+          body: 'RAG embeds documents and user queries into shared vector space, retrieves Top-K semantically similar chunks from a vector database, and grounds the LLM response to eliminate stale facts and reduce hallucinations.',
+          goto: 8
+        },
+        {
+          title: 'Layer 5: Tool Calling & MCP — Standardized Live Integrations',
+          body: 'Tool calling lets LLMs invoke external APIs and calculators via structured JSON, while the Model Context Protocol (MCP) standardizes Host–Client–Server communication (Tools, Resources, Prompts over JSON-RPC) to turn N × M custom integrations into N + M reusable adapters.',
+          goto: 11
+        }
+      ];
+
+      let currentSynth = 0;
+      const synthJumpBtn = document.getElementById('synth-jump-btn');
+      function renderSynth(idx) {
+        currentSynth = idx;
+        const item = synthItems[idx];
+        document.getElementById('synth-detail-title').textContent = item.title;
+        document.getElementById('synth-detail-body').textContent = item.body;
+        document.querySelectorAll('#synth-cards button').forEach((b, i) => {
+          b.classList.toggle('border-teal-400', i === idx);
+          b.classList.toggle('bg-slate-800/90', i === idx);
+          b.classList.toggle('border-slate-700', i !== idx);
+          b.classList.toggle('bg-slate-800/70', i !== idx);
+        });
+      }
+
+      document.querySelectorAll('#synth-cards button').forEach(btn => {
+        btn.addEventListener('click', () => renderSynth(Number(btn.dataset.synth)));
+      });
+      synthJumpBtn.addEventListener('click', () => goToSlide(synthItems[currentSynth].goto));
+
+      // =====================================================
+      // INITIALIZE ALL INTERACTIVE COMPONENTS
+      // =====================================================
+      renderCutoff(0);
+      renderModelCmp('all');
+      updateTokeniser();
+      renderPromptDemo('vague');
+      renderInfStage(0);
+      updateTempChart();
+      updateAdvisor();
+      renderOllama('pull');
+      renderRagNode('docs');
+      renderVectorLab();
+      renderRagComparison(0);
+      renderTcStep(0);
+      renderMcpDiagram();
+      renderMcpComp('host');
+      renderSeqStep(0);
+      renderHcWorkflow(0);
+      renderSynth(0);
+      readHash();
+    })();
+  </script>
+</body>
+</html>
