@@ -49,10 +49,77 @@
     }
 
     #deck-viewport {
-      height: calc(100vh - 56px);
+      height: calc(100vh - 46px);
       width: 100%;
       position: relative;
       overflow: hidden;
+    }
+
+    /* Laptop-proportioned slide density so every slide fits comfortably on 1280x720 / 1366x768 screens */
+    .slide-light > div:nth-child(2) {
+      max-width: 1260px !important;
+      padding-top: 0.75rem !important;
+      padding-bottom: 0.75rem !important;
+      padding-left: 1.5rem !important;
+      padding-right: 1.5rem !important;
+    }
+    .slide-light header {
+      padding-bottom: 0.45rem !important;
+    }
+    .slide-light header h2 {
+      font-size: clamp(1.15rem, 1.8vw, 1.55rem) !important;
+      line-height: 1.2 !important;
+    }
+    .slide-light .accent-card {
+      padding: 0.75rem 0.9rem !important;
+    }
+    .slide-light .accent-card h3 {
+      font-size: 0.9rem !important;
+      margin-bottom: 0.3rem !important;
+    }
+    .slide-light .accent-card p,
+    .slide-light .accent-card li {
+      font-size: 0.78rem !important;
+      line-height: 1.38 !important;
+    }
+    .slide-light .accent-card ul {
+      gap: 0.25rem !important;
+    }
+    .slide-light .mt-5 { margin-top: 0.65rem !important; }
+    .slide-light .mt-4 { margin-top: 0.6rem !important; }
+    .slide-light .mt-3\.5 { margin-top: 0.55rem !important; }
+    .slide-light .mt-3 { margin-top: 0.5rem !important; }
+    .slide-light .gap-4 { gap: 0.65rem !important; }
+    .slide-light .gap-3\.5 { gap: 0.6rem !important; }
+    .slide-light .p-5 { padding: 0.85rem !important; }
+    .slide-light .p-4 { padding: 0.7rem !important; }
+    .slide-light table th,
+    .slide-light table td {
+      padding-top: 0.38rem !important;
+      padding-bottom: 0.38rem !important;
+      font-size: 0.78rem !important;
+      line-height: 1.35 !important;
+    }
+    .slide-light svg#vector-svg { height: 10.25rem !important; }
+    .slide-light svg#mcp-svg { height: 9.25rem !important; }
+    .slide-light svg#mcp-seq-svg { height: 11.25rem !important; }
+    .slide-dark > div > div:last-child {
+      max-width: 1200px !important;
+      padding-top: 1.25rem !important;
+      padding-bottom: 1.25rem !important;
+    }
+    @media (max-height: 760px) and (min-width: 1024px) {
+      .slide-light {
+        font-size: 13.5px;
+      }
+      .slide-light svg#vector-svg { height: 9.25rem !important; }
+      .slide-light svg#mcp-svg { height: 8.5rem !important; }
+      .slide-light svg#mcp-seq-svg { height: 10.25rem !important; }
+      .slide-light .code-block {
+        padding: 0.55rem 0.7rem !important;
+        font-size: 0.7rem !important;
+        line-height: 1.35 !important;
+      }
     }
 
     .slide {
@@ -201,7 +268,7 @@
             Interactive Study Guide
           </div>
 
-          <h1 class="text-3xl sm:text-5xl font-extrabold tracking-tight text-white leading-tight max-w-4xl">
+          <h1 class="text-2xl sm:text-4xl lg:text-[2.65rem] font-extrabold tracking-tight text-white leading-tight max-w-4xl">
             AI Engineering: From Large Language Models to <span class="text-teal-400">RAG, Tool Calling &amp; MCP</span>
           </h1>
 
@@ -210,7 +277,7 @@
           </p>
 
           <!-- 5-Stage Horizontal Progression (clickable jump cards) -->
-          <div class="mt-9">
+          <div class="mt-6">
             <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">
               5 Core Modules — Select any module to jump directly
             </div>
@@ -262,7 +329,7 @@
             </div>
           </div>
 
-          <div class="mt-8 flex flex-wrap items-center gap-4">
+          <div class="mt-6 flex flex-wrap items-center gap-3">
             <button type="button" data-goto="2" class="nav-jump inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-teal-600 hover:bg-teal-500 text-white font-semibold text-sm shadow-lg shadow-teal-900/40 transition">
               Begin Module 1
               <span>&rarr;</span>
@@ -1477,7 +1544,7 @@
   </main>
 
   <!-- FIXED BOTTOM CONTROL BAR -->
-  <footer class="h-[56px] w-full bg-navy-900 text-slate-200 border-t border-slate-800 relative flex items-center justify-between px-4 sm:px-6 select-none">
+  <footer class="h-[46px] w-full bg-navy-900 text-slate-200 border-t border-slate-800 relative flex items-center justify-between px-4 sm:px-6 select-none">
     <div class="absolute top-0 left-0 right-0 h-[3px] bg-slate-800">
       <div id="progress-bar" class="h-full bg-teal-500 transition-all duration-300" style="width: 6.67%"></div>
     </div>
